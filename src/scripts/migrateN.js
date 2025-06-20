@@ -11,7 +11,7 @@ import bcrypt from 'bcrypt'
 
 dotenv.config();
 
-const MONGODB_URI = "mongodb://localhost:27017/prestaweb";
+const MONGODB_URI = process.env.MONGODB_URI_LOCAL/* "mongodb://localhost:27017/prestaweb"; */
 
 const statusMap = {
   active: "En curso",
@@ -196,7 +196,7 @@ console.log("pagos de leo eliminados")
         }
       }
 
-      await db.exec(`UPDATE clients SET access_code='${codigoAcceso}' user_id=${1} WHERE id=${client.id} `)
+      await db.exec(`UPDATE clients SET access_code='${codigoAcceso}',user_id=${1} WHERE id=${client.id} `)
 
 
       const cliente = new Cliente({
