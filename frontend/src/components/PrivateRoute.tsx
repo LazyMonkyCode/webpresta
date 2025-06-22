@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/index';
 import LoadingSpinner from './LoadingSpinner';
 
 interface PrivateRouteProps {
@@ -8,7 +9,7 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ element }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
 
   if (isLoading) {
     return <LoadingSpinner />;

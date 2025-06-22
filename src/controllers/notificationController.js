@@ -9,7 +9,7 @@ import User from '../models/user.js'
 export const createNotification = async (req, res) => {
   try {
     const { user_id, client_id, type, message, link } = req.body;
-    console.log(req.body)
+    //console.log(req.body)
    // const sender_user_id = req.userId; // Asumiendo que el ID del usuario logueado está en req.user.id
 
     if (!user_id && !client_id) {
@@ -92,6 +92,7 @@ export const getNotificationsForUser = async (req, res) => {
   try {
     const userId = req.user.id; // ID del usuario autenticado
     const notifications = await Notification.find({ user_id: userId }).sort({ created_at: -1 });
+    //console.log(notifications)
     res.json(notifications);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener notificaciones del usuario', error: error.message });
@@ -147,4 +148,56 @@ export const deleteNotification = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error al eliminar notificación', error: error.message });
   }
+
+
 }; 
+
+
+  // Crear una notificación desde la app
+  export const createNotificationFromApp = async (req, res) => {
+    try {
+      const { user_id, client_id, type, message, link,data } = req.body;
+
+      if(!user_id && !client_id){
+        return res.status(400).json({ message: 'Se requiere user_id o client_id' });
+      } 
+
+      const user = await User.findOne({sqlite_id:user_id.toString()})
+      const client = await Cliente.findOne({sqlite_id:client_id.toString()})
+
+      if(!user && !client){
+        return res.status(400).json({ message: 'Usuario o cliente no encontrado' });
+      }
+      console.log(user,"user")
+      console.log(client,"client")
+
+
+      const notification = new Notification({ 
+        user_id:user._id, 
+        client_id:client._id, 
+        type, message, link ,
+        message,
+        link,
+        data
+      });
+      await notification.save();
+
+      user.notification.push(notification._id)
+      user.save()
+
+      client.notification.push(notification._id)
+      client.save()
+
+      const targetSocketId = getReceiverSocketId("client",client._id.toString());
+      //const targetSocketIdUser = getReceiverSocketId("user",user._id.toString());
+
+      if(targetSocketId && io){
+        io.to(targetSocketId).emit('new_notification', notification);
+        console.log(`Notificación enviada por socket a cliente ${client_id}`);
+      }
+
+      res.status(201).json(notification);
+    } catch (error) {
+      res.status(500).json({ message: 'Error al crear notificación desde la app', error: error.message });
+    }
+  };

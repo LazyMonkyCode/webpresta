@@ -6,19 +6,31 @@ const API_BASE_URL = 'http://localhost:4000/api'; /* process.env.REACT_APP_API_U
 //||  
 
 export interface Cliente {
-  id: string;
+  _id: string;
   nickname?: string;
-  name: string;
-  lastname: string;
-  email: string;
-  codigoAcceso: string;
+  name?: string;
+  lastname?: string;
+  email?: string;
+  codigoAcceso?: string;
   phone?: string;
   address?: string;
   cbu?: string;
   aliasCbu?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  role?: string;
+  username?: string;
+}
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
 }
 
-interface AuthState {
+export interface AuthState {
   user: Cliente | null;
   token: string | null;
   isAuthenticated: boolean;
@@ -34,23 +46,58 @@ const initialState: AuthState = {
   error: null,
 };
 
+// Login con código de acceso
+export const loginWithCode = createAsyncThunk(
+  'auth/loginWithCode',
+  async ({ codigoAcceso }: { codigoAcceso: string }, { rejectWithValue }) => {
+    try {
 
+      console.log("codigoAcceso",codigoAcceso);
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, { codigoAcceso });
+      const { token, cliente } = response.data;
+      
+      localStorage.setItem('authToken', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      return { token, cliente };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.mensaje || 'Error de autenticación');
+    }
+  }
+);
+
+// Login con email/password
+export const loginWithCredentials = createAsyncThunk(
+  'auth/loginWithCredentials',
+  async ({ username, password }: { username: string; password: string }, { rejectWithValue }) => {
+    try {
+      console.log("username",username);
+      console.log("password",password);
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, { username, password });
+      const { token, user } = response.data;
+      console.log("response.data",response.data);
+      localStorage.setItem('authToken', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      return { token, cliente: user };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.mensaje || 'Error de autenticación');
+    }
+  }
+);
+
+// Mantener compatibilidad con el login existente
 export const login = createAsyncThunk(
   'auth/login',
   async ({ codigoAcceso }: { codigoAcceso: string }, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, { codigoAcceso });
-      const { token, cliente } = response.data;
+      const { token, cliente,user } = response.data;
       
-      //console.log(response.data)
-      // Guardar token en localStorage
       localStorage.setItem('authToken', token);
-      
-      // Configurar el token en axios para futuras peticiones
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      //console.log(token)
       
-      return { token, cliente };
+      return { token, cliente:cliente||user };  
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.mensaje || 'Error de autenticación');
     }
@@ -101,7 +148,38 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Login
+      // Login con código de acceso
+      .addCase(loginWithCode.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginWithCode.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.cliente;
+        state.token = action.payload.token;
+      })
+      .addCase(loginWithCode.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Login con credenciales
+      .addCase(loginWithCredentials.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginWithCredentials.fulfilled, (state, action) => {
+        console.log("action.payload",action.payload);
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.cliente;
+        state.token = action.payload.token;
+      })
+      .addCase(loginWithCredentials.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Login (mantener compatibilidad)
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;

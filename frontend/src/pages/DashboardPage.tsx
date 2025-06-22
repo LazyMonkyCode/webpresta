@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 // import { Alert, Modal, Badge } from 'react-bootstrap'; // Eliminadas todas las importaciones de react-bootstrap
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/index';
 import apiService, { ResumenCliente, Pago } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PaymentModal from '../components/PaymentModal';
 import { Paperclip, HelpCircle } from 'lucide-react';
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [resumen, setResumen] = useState<ResumenCliente | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,8 +22,14 @@ const DashboardPage: React.FC = () => {
         setIsLoading(false);
         return;
       }
+
+      console.log("user",user);
       setIsLoading(true);
       try {
+
+
+        console.log("user",user);
+
         const data = await apiService.getResumenCliente(user._id); 
         ////console.log(data)
         setResumen(data);

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import PrivateRouteComponentFromFile from './components/PrivateRoute';
 import LoginPage from './pages/LoginPage';
@@ -9,16 +8,21 @@ import LoansPage from './pages/LoansPage';
 import LoanDetailPage from './pages/LoanDetailPage';
 import PaymentsPage from './pages/PaymentsPage';
 import ProfilePage from './pages/ProfilePage';
+import AdminPaymentsPage from './pages/AdminPaymentsPage';
+import ActivitiesPage from './pages/ActivitiesPage';
 import NotFoundPage from './pages/NotFoundPage';
 import Navigation from './components/Navigation';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useSelector } from 'react-redux';
+import { RootState } from './store/index';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
 }
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+
+  const { isAuthenticated, isLoading,user } = useSelector((state: RootState) => state.auth);
   if (isLoading) {
     return <div>Cargando autenticación...</div>;
   }
@@ -30,17 +34,16 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
       <NotificationProvider>
         <AppContent />
         <ToastContainer />
       </NotificationProvider>
-    </AuthProvider>
+   
   );
 };
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading,user } = useSelector((state: RootState) => state.auth);
 
   const showNav = isAuthenticated && !isLoading;
 
@@ -52,7 +55,9 @@ const AppContent: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route 
             path="/dashboard" 
-            element={<PrivateRoute><DashboardPage /></PrivateRoute>} 
+            element={<PrivateRoute>{
+            user?.role === "admin" ? <AdminPaymentsPage /> : <DashboardPage />
+            }</PrivateRoute>} 
           />
           <Route 
             path="/profile"
@@ -70,6 +75,14 @@ const AppContent: React.FC = () => {
             path="/payments"
             element={<PrivateRoute><PaymentsPage /></PrivateRoute>}
           />
+        {/*   <Route 
+            path="/admin"
+            element={<PrivateRoute><AdminPaymentsPage /></PrivateRoute>}
+          />
+          <Route 
+            path="/activities"
+            element={<PrivateRoute><ActivitiesPage /></PrivateRoute>}
+          /> */}
           <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

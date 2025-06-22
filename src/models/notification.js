@@ -35,10 +35,10 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  created_at: {
-    type: Date,
-    default: Date.now,
+  data: {
+    type: Object,
   },
+  
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });

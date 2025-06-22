@@ -1,36 +1,27 @@
-import React, { useState/*, useEffect*/ } from 'react';
-import { NavLink, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-// import { Bell20Solid, BellAlert16Solid } from './icons'; // No se usarán directamente aquí
-import NotificationBell from './NotificationBell'; // Importar el nuevo componente
-// import { HiBell } from 'react-icons/hi'
-// import { io } from "socket.io-client";   
-import  socketService  from '../services/socketService';
-
-
-// const socket = io(process.env.REACT_APP_API_URL || "http://localhost:4000"); 
- 
+import React from 'react';
+import { useNotifications } from '../context/NotificationContext';
+import { useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
+import { NavLink } from 'react-router-dom';
+import socketService from '../services/socketService';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/index';
+import { logout } from '../store/slices/authSlice';
+import { useDispatch } from 'react-redux';
 const Navigation: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { notifications, unreadCount } = useNotifications();
   const navigate = useNavigate();
-  
+  const dispatch = useDispatch();
   const handleLogout = () => {
-    logout();
+    dispatch(logout());
     socketService.disconnect();
     navigate('/login');
   };
 
+  console.log("user",user);
   // State for mobile menu visibility
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-
-  // ELIMINAR ESTADO LOCAL DE NOTIFICACIONES ANTIGUO
-  // const [notifications, /*setNotifications*/] = useState<any[]>([]);
-  // const [unreadCount, /*setUnreadCount*/] = useState(0);
-  // const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
-
-  // ELIMINAR useEffect ANTIGUO DE NOTIFICACIONES
-
-  // ELIMINAR handleMarkAsRead ANTIGUO
 
   return (
     <nav className="bg-blue-600 text-white p-3 shadow-md fixed top-0 left-0 right-0 z-50"> {/* Asegurar que la nav sea fija y esté por encima */}
@@ -41,15 +32,21 @@ const Navigation: React.FC = () => {
           {/* Desktop Menu & Mobile Menu (conditionally rendered) */}
           <div className={`lg:flex items-center space-x-4 ${isMobileMenuOpen ? 'block' : 'hidden'} absolute lg:static top-full left-0 right-0 w-full lg:w-auto bg-blue-600 lg:bg-transparent p-4 lg:p-0 shadow-md lg:shadow-none z-40 lg:z-auto`}>
             <NavLink to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => `block lg:inline-block py-2 lg:py-0 ${isActive ? "text-blue-200 font-semibold" : "hover:text-blue-200"}`}>Inicio</NavLink>
-            <NavLink to="/loans" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => `block lg:inline-block py-2 lg:py-0 ${isActive ? "text-blue-200 font-semibold" : "hover:text-blue-200"}`}>Mis Préstamos</NavLink>
-            <NavLink to="/payments" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => `block lg:inline-block py-2 lg:py-0 ${isActive ? "text-blue-200 font-semibold" : "hover:text-blue-200"}`}>Mis Pagos</NavLink> {/* Añadido Mis Pagos */}
-            <NavLink to="/profile" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => `block lg:inline-block py-2 lg:py-0 ${isActive ? "text-blue-200 font-semibold" : "hover:text-blue-200"}`}>Mi Perfil</NavLink>
+            {user?.role != 'admin' && <NavLink to="/loans" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => `block lg:inline-block py-2 lg:py-0 ${isActive ? "text-blue-200 font-semibold" : "hover:text-blue-200"}`}>Mis Préstamos</NavLink>}
+            {user?.role !== 'admin' && <NavLink to="/payments" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => `block lg:inline-block py-2 lg:py-0 ${isActive ? "text-blue-200 font-semibold" : "hover:text-blue-200"}`}>Mis Pagos</NavLink>} {/* Añadido Mis Pagos */}
+            {/* Ruta de administración para admin y cobradores */}
+            {/* {(user?.role === 'admin' || user?.role === 'collector' || user?.role === 'user') && (
+              
+            )} */}
+           <NavLink to="/profile" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => `block lg:inline-block py-2 lg:py-0 ${isActive ? "text-blue-200 font-semibold" : "hover:text-blue-200"}`}>Mi Perfil</NavLink>
+
             
+
             {/* Contenedor para notificaciones y logout */}
             <div className="mt-4 lg:mt-0 lg:ml-4 flex flex-col lg:flex-row items-start lg:items-center">
               {user && (
                 <span className="mb-2 lg:mb-0 lg:mr-3 text-sm">
-                  Hola, {user.nickname || `${user.name} ${user.lastname}`.trim() || 'Usuario'}
+                  Hola, {user.username ? user.username : user.name ? `${user.name} ${user.lastname}`.trim() : 'Usuario'}
                 </span>
               )}
               

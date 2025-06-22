@@ -49,12 +49,12 @@ const prestamoSchema = new mongoose.Schema({
   },
   term: {
     type: Number,
-    required: true,
+    
     min: 1
   },
   status: {
     type: String,
-    enum: ['Pendiente',
+    enum: ['Pendiente', 'pending',
       'active','completed','cancelled','refounded', 'Aprobado', 'Rechazado', 'En curso', 'Pagado', 'Vencido', 'Cancelado'],
     default: 'active'
   },

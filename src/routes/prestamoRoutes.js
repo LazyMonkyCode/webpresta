@@ -6,7 +6,8 @@ import {
   createPrestamo,
   updatePrestamo,
   deletePrestamo,
-  getLoansForFilter
+  getLoansForFilter,
+  createLoanRequest
 } from '../controllers/prestamoController.js';
 import { verificarToken } from '../middleware/authMiddleware.js';
 
@@ -46,6 +47,7 @@ const verificarDuenoPrestamo = async (req, res, next) => {
 router.get('/for-filter', verificarToken, getLoansForFilter);
 
 router.post('/', verificarToken, createPrestamo);
+router.post('/request', verificarToken, createLoanRequest);
 router.get('/:prestamoId', verificarToken, getPrestamoById);
 router.put('/:prestamoId', verificarToken, updatePrestamo);
 router.delete('/:prestamoId', verificarToken, deletePrestamo);

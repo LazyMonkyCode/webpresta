@@ -12,6 +12,9 @@ export interface Cliente {
   address?: string;
   cbu?: string;
   aliasCbu?: string;
+  emailVerified?:boolean;
+  phoneVerified?:boolean;
+  role?: string;
 }
 
 export interface Prestamo {
@@ -242,6 +245,17 @@ const apiService = {
     return response.data;
   },
   
+  // Solicitar nuevo préstamo
+  requestLoan: async (loanData: { amount: number; installments: number; disbursementDate: string }) => {
+    try {
+      const response = await api.post('/prestamos/request', loanData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error al solicitar préstamo:', error);
+      throw new Error(error.response?.data?.mensaje || 'Error al solicitar préstamo');
+    }
+  },
+  
   // Pagos
   getPagosCliente: async (clienteId: string) => {
     const response = await api.get<Pago[]>(`/clientes/${clienteId}/pagos`);
@@ -338,6 +352,114 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Error deleting payment proof:', error);
+      throw error;
+    }
+  },
+
+  // Funciones para administradores y cobradores
+  getAdminPayments: async (date: string) => {
+    try {
+      const response = await api.get(`/pagos/admin/daily?date=${date}`);
+      console.log("response",response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin payments:', error);
+      throw error;
+    }
+  },
+
+  updateAdminPayment: async (paymentId: string, updateData: {
+    status: string;
+    incomplete_amount?: number;
+    payment_method?: string;
+  }) => {
+    try {
+      const response = await api.put(`/pagos/admin/${paymentId}`, updateData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating admin payment:', error);
+      throw error;
+    }
+  },
+
+  // Funciones para actividades de administradores y cobradores
+  getActivities: async (params?: {
+    page?: number;
+    limit?: number;
+    admin_id?: string;
+    action?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined) {
+            queryParams.append(key, value.toString());
+          }
+        });
+      }
+      
+      const response = await api.get(`/activities?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      throw error;
+    }
+  },
+
+  getActivitiesSummary: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined) {
+            queryParams.append(key, value.toString());
+          }
+        });
+      }
+      
+      const response = await api.get(`/activities/summary?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching activities summary:', error);
+      throw error;
+    }
+  },
+
+  getAdminActivities: async (adminId: string, params?: {
+    page?: number;
+    limit?: number;
+  }) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined) {
+            queryParams.append(key, value.toString());
+          }
+        });
+      }
+      
+      const response = await api.get(`/activities/admin/${adminId}?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin activities:', error);
+      throw error;
+    }
+  },
+
+  // Obtener actividades del usuario actual (últimas 10)
+  getCurrentUserActivities: async () => {
+    try {
+      const response = await api.get('/activities?limit=10&page=1');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching current user activities:', error);
       throw error;
     }
   }

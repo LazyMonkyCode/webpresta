@@ -1,6 +1,8 @@
 import Pago from '../models/pago.js';
 import Prestamo from '../models/prestamo.js';
-import { sendNotificationToUser } from '../socketHandler.js'; // Importar función de notificación
+import Cliente from '../models/cliente.js';
+import Activity from '../models/activity.js';
+import { sendNotificationToUser, sendNotificationToAll } from '../socketHandler.js'; // Importar función de notificación
 import { v4 as uuidv4 } from 'uuid'; // Para generar IDs para las notificaciones
 import cloudinary from '../config/cloudinaryConfig.js'; // Importar Cloudinary
 
@@ -515,5 +517,260 @@ export const deleteComprobantePago = async (req, res) => {
         return res.status(500).json({ mensaje: `Error con el servicio de Cloudinary: ${error.message}`});
     }
     res.status(500).json({ mensaje: 'Error interno del servidor al eliminar el comprobante.' });
+  }
+};
+
+// Función para obtener pagos del día para administradores y cobradores
+export const getAdminDailyPayments = async (req, res) => {
+  try {
+    const { date } = req.query;
+    
+    if (!date) {
+      return res.status(400).json({ mensaje: 'Fecha requerida' });
+    }
+
+    // Crear fecha de inicio y fin del día
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+
+    // Buscar pagos programados para esa fecha
+    const pagos = await Pago.find({
+      payment_date: {
+        $gte: startDate,
+        $lte: endDate
+      }
+    })
+    .populate({
+      path: 'loan_id',
+      select: 'label client_id',
+      populate: {
+        path: 'client_id',
+        select: 'nickname name lastname'
+      }
+    })
+    .sort({ payment_date: 1 })
+    .lean();
+
+    // Procesar los pagos para incluir información del cliente y préstamo
+    const processedPayments = pagos.map(pago => {
+      const cliente = pago.loan_id?.client_id;
+      return {
+        _id: pago._id,
+        cliente: cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente no encontrado',
+        prestamoLabel: pago.loan_id?.label || 'Préstamo no encontrado',
+        amount: pago.amount,
+        status: pago.status,
+        payment_date: pago.payment_date,
+        installment_number: pago.installment_number,
+        payment_method: pago.payment_method,
+        incomplete_amount: pago.incomplete_amount,
+        comments: pago.comments
+      };
+    });
+
+    res.json({
+      payments: processedPayments,
+      date: date,
+      totalPayments: processedPayments.length
+    });
+
+  } catch (error) {
+    console.error('Error al obtener pagos del día:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
+};
+
+// Función para actualizar pagos desde administración
+export const updateAdminPayment = async (req, res) => {
+  try {
+    const { pagoId } = req.params;
+    const { status, incomplete_amount, payment_method } = req.body;
+    const adminUser = req.user || req.cliente; // Usuario que realiza la acción
+
+    // Validar datos
+    if (!status || !['paid', 'pending', 'incomplete'].includes(status)) {
+      return res.status(400).json({ mensaje: 'Estado inválido' });
+    }
+
+    if (status === 'incomplete' && (!incomplete_amount || incomplete_amount <= 0)) {
+      return res.status(400).json({ mensaje: 'Monto incompleto requerido' });
+    }
+
+    // Buscar el pago con información completa
+    const pago = await Pago.findById(pagoId)
+      .populate({
+        path: 'loan_id',
+        select: 'label client_id sqlite_id',
+        populate: {
+          path: 'client_id',
+          select: 'name lastname nickname sqlite_id'
+        }
+      });
+
+    if (!pago) {
+      return res.status(404).json({ mensaje: 'Pago no encontrado' });
+    }
+
+    const previousStatus = pago.status;
+    const cliente = pago.loan_id?.client_id;
+    const prestamo = pago.loan_id;
+
+    // Actualizar el pago
+    const updateData = {
+      status,
+      payment_method: payment_method || pago.payment_method
+    };
+
+    if (status === 'paid') {
+      updateData.paid_date = new Date();
+      updateData.incomplete_amount = undefined; // Limpiar monto incompleto si se marca como pagado
+    } else if (status === 'incomplete') {
+      updateData.incomplete_amount = incomplete_amount;
+      updateData.paid_date = undefined; // Limpiar fecha de pago
+    } else if (status === 'pending') {
+      updateData.paid_date = undefined;
+      updateData.incomplete_amount = undefined;
+    }
+
+    const updatedPago = await Pago.findByIdAndUpdate(
+      pagoId,
+      updateData,
+      { new: true }
+    ).populate({
+      path: 'loan_id',
+      select: 'label client_id sqlite_id',
+      populate: {
+        path: 'client_id',
+        select: 'name lastname nickname sqlite_id'
+      }
+    });
+
+    // Determinar la acción para el registro de actividad
+    let action = 'payment_updated';
+    if (status === 'paid' && previousStatus !== 'paid') {
+      action = 'payment_marked_paid';
+    } else if (status === 'pending' && previousStatus !== 'pending') {
+      action = 'payment_marked_pending';
+    } else if (status === 'incomplete' && previousStatus !== 'incomplete') {
+      action = 'payment_marked_incomplete';
+    }
+
+    // Crear registro de actividad
+    const activity = new Activity({
+      admin_id: adminUser._id,
+      admin_name: adminUser.username ? adminUser.username : adminUser.name + ' ' + adminUser.lastname,
+      admin_role: adminUser.role || "admin",
+      action: action,
+      payment_id: pago._id,
+      payment_sqlite_id: pago.sqlite_id || 0,
+      client_sqlite_id: cliente?.sqlite_id || 0,
+      client_name: cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente no encontrado',
+      loan_label: prestamo?.label || 'Préstamo no encontrado',
+      payment_amount: pago.amount,
+      previous_status: previousStatus,
+      new_status: status,
+      payment_method: payment_method || pago.payment_method,
+      incomplete_amount: incomplete_amount,
+      details: `Pago ${status === 'paid' ? 'marcado como pagado' : status === 'incomplete' ? 'marcado como incompleto' : 'marcado como pendiente'} por ${adminUser.role === 'admin' ? 'administrador' : 'cobrador'}`
+    });
+
+    await activity.save();
+
+    // Preparar datos para notificación
+    const notificationData = {
+      
+      type: 'admin_activity',
+      title: 'Actividad de Cobranza',
+      message: `${adminUser.name} ${adminUser.lastname} (${adminUser.role === 'admin' ? 'Administrador' : 'Cobrador'}) ${status === 'paid' ? 'marcó como pagado' : status === 'incomplete' ? 'marcó como incompleto' : 'marcó como pendiente'} el pago de ${pago.amount} del cliente ${cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente'} para el préstamo "${prestamo?.label}"`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      data: {
+        admin_id: adminUser._id,
+        admin_name: adminUser.username ? adminUser.username : adminUser.name + ' ' + adminUser.lastname,
+        admin_role: adminUser.role,
+        action: action,
+        payment_id: pago._id,
+        payment_sqlite_id: pago.sqlite_id || 0,
+        client_sqlite_id: cliente?.sqlite_id || 0,
+        client_name: cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente no encontrado',
+        loan_label: prestamo?.label || 'Préstamo no encontrado',
+        payment_amount: pago.amount,
+        previous_status: previousStatus,
+        new_status: status,
+        payment_method: payment_method || pago.payment_method,
+        incomplete_amount: incomplete_amount
+      }
+    };
+
+    const notification = new Notification({
+      type: 'admin_activity',
+      title: 'Actividad de Cobranza',
+      message: `${adminUser.username ? adminUser.username : adminUser.name + ' ' + adminUser.lastname} 
+      
+      (${adminUser.role === 'admin' ? 'Administrador' : 'Cobrador'}) 
+      ${status === 'paid' ? 
+        'marcó como pagado' : status === 'incomplete' ? 
+        'marcó como incompleto' : 'marcó como pendiente'} 
+        el pago de ${pago.amount} del cliente 
+        ${cliente ? (cliente.nickname 
+          || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente'}
+           para el préstamo "${prestamo?.label}"`,
+      timestamp: new Date().toISOString(),
+      read: false,
+    });
+
+    // Enviar notificación a todos los usuarios conectados
+    sendNotificationToAll(notificationData);
+
+    // Enviar notificación específica al cliente para cualquier cambio de estado
+    if (cliente) {
+      let clientNotificationTitle = '';
+      let clientNotificationMessage = '';
+      
+      if (status === 'paid') {
+        clientNotificationTitle = 'Pago Confirmado';
+        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido confirmado por ${adminUser.name} ${adminUser.lastname}.`;
+      } else if (status === 'incomplete') {
+        clientNotificationTitle = 'Pago Incompleto';
+        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido marcado como incompleto. Monto pagado: ${incomplete_amount}. Método: ${payment_method || 'No especificado'}.`;
+      } else if (status === 'pending') {
+        clientNotificationTitle = 'Pago Pendiente';
+        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido marcado como pendiente por ${adminUser.name} ${adminUser.lastname}.`;
+      }
+      
+      const clientNotificationData = {
+        
+        type: status === 'paid' ? 'success' : status === 'incomplete' ? 'warning' : 'info',
+        title: clientNotificationTitle,
+        message: clientNotificationMessage,
+        timestamp: new Date().toISOString(),
+        read: false,
+        link: `/loans/${prestamo?._id}`,
+        data: {
+          payment_id: pago._id,
+          payment_amount: pago.amount,
+          loan_label: prestamo?.label,
+          status: status,
+          admin_name: adminUser.name + ' ' + adminUser.lastname,
+          incomplete_amount: incomplete_amount,
+          payment_method: payment_method
+        }
+      };
+      
+      sendNotificationToUser(cliente._id.toString(), clientNotificationData);
+    }
+
+    res.json({
+      mensaje: 'Pago actualizado exitosamente',
+      pago: updatedPago,
+      activity: activity
+    });
+
+  } catch (error) {
+    console.error('Error al actualizar pago desde admin:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
   }
 }; 

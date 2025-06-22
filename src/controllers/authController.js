@@ -17,9 +17,9 @@ const accessCodeLogin=async(req,res,next)=>{
     }
     
         const {codigoAcceso  } = req.body;
-        if (!codigoAcceso && !username ) {
+        if (!codigoAcceso) {
         return res.status(400).json({ 
-          mensaje: 'Por favor proporciona código de acceso y contraseña' 
+          mensaje: 'Por favor proporciona un código de acceso' 
         });
       }
    
@@ -66,13 +66,30 @@ const accessCodeLogin=async(req,res,next)=>{
 const usernameLogin=async(req,res)=>{
     const { username, password,remmember } = req.body;
 
-    const user = await User.findOne({ username });
-    if (!user) {
-        return res.status(401).json({ message: 'Usuario no encontrado' });
+
+    // Primero intentar buscar como usuario admin
+    let user = await User.findOne({ email:username });
+    let isAdmin = false;
+    
+    if (user) {
+        isAdmin = true;
+    } else {
+        // Si no es usuario admin, buscar como cliente por email
+        user = await Cliente.findOne({ email: username });
+        if (!user) {
+            return res.status(401).json({ mensaje: 'Usuario no encontrado' });
+        }
     }
     
     // Verificar contraseña
-     const passwordValida = await bcrypt.compare(password, user.password);
+    let passwordValida = false;
+    
+    if (isAdmin) {
+        passwordValida = await bcrypt.compare(password, user.password);
+    } else {
+        // Para clientes, usar el método comparePassword
+        passwordValida = await user.comparePassword(password);
+    }
     
     if (!passwordValida) {
       return res.status(401).json({ mensaje: 'Credenciales inválidas' });
@@ -85,12 +102,18 @@ const usernameLogin=async(req,res)=>{
     
     // Generar token JWT 
     const token = jwt.sign(
-        { id: user._id, ...user },
+        { id: user._id, codigoAcceso: user.codigoAcceso || user.username },
         JWT_SECRET,
         { expiresIn: TOKEN_EXPIRATION }
       );
-
-    return res.status(200).json({ message: 'Usuario autenticado correctamente', token, user });
+    
+    // Devolver respuesta según el tipo de usuario
+    if (isAdmin) {
+      console.log("es admin");
+        return res.status(200).json({ message: 'Usuario autenticado correctamente', token, user });
+    } else {
+        return res.status(200).json({ message: 'Cliente autenticado correctamente', token, cliente: user });
+    }
    
 }
 
@@ -209,9 +232,50 @@ const setPassword=async(req,res)=>{
       
 }
 
+// Función para establecer contraseña por email
+const setPasswordByEmail = async (req, res) => {
+  try {
+    const { email, codigoAcceso, password } = req.body;
+    
+    if (!email || !codigoAcceso || !password) {
+      return res.status(400).json({ 
+        mensaje: 'Email, código de acceso y contraseña son requeridos' 
+      });
+    }
+    
+    // Buscar cliente por email y código de acceso
+    const cliente = await Cliente.findOne({ email, codigoAcceso });
+    
+    if (!cliente) {
+      return res.status(404).json({ mensaje: 'Cliente no encontrado o código de acceso incorrecto' });
+    }
+    
+    // Verificar que la contraseña tenga al menos 6 caracteres
+    if (password.length < 6) {
+      return res.status(400).json({ mensaje: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    
+    // Encriptar la nueva contraseña
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    // Actualizar contraseña
+    cliente.password = hashedPassword;
+    await cliente.save();
+    
+    res.json({ mensaje: 'Contraseña establecida con éxito' });
+  } catch (error) {
+    console.error('Error al establecer contraseña:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
+};
+
 
 export default {
     accessCodeLogin,
     usernameLogin,
-    registerUser
+    verifyToken,
+    registerUser,
+    setPassword,
+    setPasswordByEmail
 }

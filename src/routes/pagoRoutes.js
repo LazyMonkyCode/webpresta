@@ -8,9 +8,11 @@ import {
   deletePago, 
   getFilteredUserPayments,
   uploadComprobantePago,
-  deleteComprobantePago
+  deleteComprobantePago,
+  getAdminDailyPayments,
+  updateAdminPayment
 } from '../controllers/pagoController.js';
-import { verificarToken, verificarPropietario } from '../middleware/authMiddleware.js';
+import { verificarToken, verificarPropietario, verificarAdminOrCollector } from '../middleware/authMiddleware.js';
 import upload from '../middleware/multerConfig.js'; // Importar multer
 
 const router = Router();
@@ -78,5 +80,8 @@ router.delete(
   deleteComprobantePago
 );
 
+// Rutas de administración para admin y cobradores
+router.get('/admin/daily', [verificarToken/* , verificarAdminOrCollector */], getAdminDailyPayments);
+router.put('/admin/:pagoId', [verificarToken, /* verificarAdminOrCollector */], updateAdminPayment);
 
 export default router; 

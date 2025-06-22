@@ -7,9 +7,10 @@ const router = Router();
 router.post('/login',authController.accessCodeLogin,authController.usernameLogin);
 router.post('/register',authController.registerUser);
 // Verificar token (para validar sesión en frontend)
-//router.get('/verificar', authController.verifyToken);
+router.get('/verificar', authController.verifyToken);
 
 // Establecer contraseña (primera vez o recuperación)
-//router.post('/set-password', authController.setPassword);
+router.post('/set-password', authController.setPassword);
+router.post('/set-password-email', authController.setPasswordByEmail);
 
 export default router; 

@@ -22,7 +22,7 @@ const pagoSchema = new mongoose.Schema({
   },
   total_amount: {
     type: Number,
-    required: true,
+    
     min: 0
   },
   payment_date: {
@@ -62,12 +62,12 @@ const pagoSchema = new mongoose.Schema({
   // Campos adicionales
   installment_number: {
     type: Number,
-    required: true,
+    default: 1,
     min: 1
   },
   due_date: {
     type: Date,
-    required: true
+    
   },
   late_fee: {
     type: Number,

@@ -63,6 +63,10 @@ const clienteSchema = new mongoose.Schema({
     trim: true,
     unique: true
   },
+  password: {
+    type: String,
+    select: false // No incluir en consultas por defecto
+  },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

@@ -2,8 +2,8 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import { Notification } from '../types'; // Asegúrate que la ruta a types/index.ts es correcta
 import { v4 as uuidv4 } from 'uuid'; // Para generar IDs únicos para las notificaciones
 import socketService from '../services/socketService'; // Importar socketService
-import { useAuth } from './AuthContext'; // Importar useAuth
-
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/index';
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
@@ -19,8 +19,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const { isAuthenticated, user } = useAuth(); // Obtener estado de autenticación
-
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   useEffect(() => {
     // Calcular no leídas cuando cambian las notificaciones
     const count = notifications.filter(n => !n.read).length;
@@ -71,7 +70,16 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         addRawNotification(notification); 
       };
 
+      const handleAdminActivity = (notification: Notification) => {
+        console.log('Admin activity notification received:', notification);
+        // Para notificaciones de actividad de admin, solo mostrar si el usuario es admin o collector
+        if ((user as any).role === 'admin' || (user as any).role === 'collector') {
+          addRawNotification(notification);
+        }
+      };
+
       socketService.on('new_notification', handleNewNotification);
+      socketService.on('newNotification', handleAdminActivity); // Para usuarios del sistema
       
       // Aquí podrías cargar notificaciones iniciales/persistidas si es necesario
       // Ejemplo: fetchInitialNotifications();
@@ -79,12 +87,14 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       return () => {
         console.log('NotificationContext: Disconnecting socket for user:', user._id);
         socketService.off('new_notification', handleNewNotification);
+        socketService.off('newNotification', handleAdminActivity);
         // No desconectar globalmente aquí, podría ser usado por otros contextos.
         // socketService.disconnect(); // Desconectar solo si este es el único consumidor
       };
     } else {
         // Si no está autenticado, asegurarse de que no haya listeners activos de notificaciones.
         socketService.off('new_notification');
+        socketService.off('newNotification');
         // Opcionalmente desconectar si es el momento adecuado:
         // socketService.disconnect(); 
     }

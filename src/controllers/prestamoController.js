@@ -151,7 +151,7 @@ export const createPrestamo = async (req, res) => {
     const {prestamo,payments} = req.body;
     
     // Validar que el cliente existe
-    const cliente = await Cliente.findById(prestamo.client_id);
+    const cliente = await Cliente.findOne({sqlite_id:prestamo.client_id.toString()});
     if (!cliente) {
       return res.status(404).json({ mensaje: 'Cliente no encontrado' });
     }
@@ -167,7 +167,18 @@ export const createPrestamo = async (req, res) => {
     }
     const sqlite_id = prestamo.id
     delete prestamo.id
-    const _prestamo = new Prestamo({...prestamo,client_id:client._id,sqlite_id:sqlite_id});
+
+    console.log("prestamo",prestamo)
+
+    console.log("prestamo.installments_number",prestamo.installment_number)
+    console.log("prestamo.total_amount",prestamo.total_amount)
+
+    const _prestamo = new Prestamo({...prestamo,
+      installment_number:prestamo.installment_number,
+      total_amount:prestamo.total_amount,
+      payment_interval:prestamo.payment_interval,
+      client_id:client._id,
+      sqlite_id:sqlite_id});
     const savedPrestamo = await _prestamo.save();
     
     // Actualizar el cliente con la referencia al préstamo
@@ -294,4 +305,83 @@ export const getLoansForFilter = async (req, res) => {
         console.error("Error fetching loans for filter:", error);
         res.status(500).json({ message: "Error al obtener los préstamos para el filtro: " + error.message });
     }
+};  
+
+// Crear solicitud de préstamo pendiente
+export const createLoanRequest = async (req, res) => {
+  try {
+    const { amount, installments, disbursementDate } = req.body;
+    const clienteId = req.clienteId;
+
+    // Validar datos de entrada
+    if (!amount || amount < 10000 || amount > 10000000) {
+      return res.status(400).json({ 
+        mensaje: 'El monto debe estar entre $10,000 y $10,000,000' 
+      });
+    }
+
+    if (!installments || installments < 1 || installments > 60) {
+      return res.status(400).json({ 
+        mensaje: 'El número de cuotas debe estar entre 1 y 60' 
+      });
+    }
+
+    if (!disbursementDate) {
+      return res.status(400).json({ 
+        mensaje: 'La fecha de desembolso es requerida' 
+      });
+    }
+
+    // Validar que el cliente existe
+    const cliente = await Cliente.findById(clienteId);
+    if (!cliente) {
+      return res.status(404).json({ mensaje: 'Cliente no encontrado' });
+    }
+
+    // Crear el préstamo pendiente
+    const nuevoPrestamo = new Prestamo({
+      client_id: clienteId,
+      amount: amount,
+      total_amount: amount,
+      interest_rate: 0, // Se establecerá cuando se apruebe
+      payment_interval: 'monthly',
+      installment_number: installments,
+      loan_date: disbursementDate,
+      status: 'pending',
+      label: `Solicitud - $${amount.toLocaleString()}`,
+      total_paid: 0,
+      remaining_amount: amount,
+      gain: 0,
+      term: installments
+    });
+
+    const prestamoGuardado = await nuevoPrestamo.save();
+
+    // Actualizar el cliente con la referencia al préstamo
+    await Cliente.findByIdAndUpdate(
+      clienteId,
+      { $push: { loans: prestamoGuardado._id } }
+    );
+
+    // Emitir evento de socket para notificar a administradores
+    const { io } = await import('../index.js');
+    io.emit('loan_request_created', {
+      prestamoId: prestamoGuardado._id,
+      clienteId: clienteId,
+      clienteNombre: `${cliente.name} ${cliente.lastname}`,
+      amount: amount,
+      installments: installments,
+      disbursementDate: disbursementDate,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(201).json({
+      mensaje: 'Solicitud de préstamo creada exitosamente',
+      prestamo: prestamoGuardado
+    });
+
+  } catch (error) {
+    console.error('Error al crear solicitud de préstamo:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
 };  

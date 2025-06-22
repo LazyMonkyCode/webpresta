@@ -93,14 +93,15 @@ export default function initializeSocket(io) {
      const cliente = await Cliente.findOne({_id:socket.clienteId})
      
      if(cliente){
-     // const clientes = await Cliente.find({ _id: { $in: _connectedClientes } });
+      //const clientes = await Cliente.find({ _id: { $in: _connectedClientes } });
       const users = await User.find({_id:{$in:_connectedUsers}})
       socket.emit('usersOnlineStatus',{onlineUsers:users})
+      //socket.emit('clientesOnlineStatus',{onlineClientes:clientes,onlineUsers:users})
       
       users.forEach(async(user)=>{
         if(connectedUsers.get(user._id.toString())){
           io.to(connectedUsers.get(user._id.toString()))
-          .emit('clientConnected',{ clienteId: cliente._id, isOnline: true,cliente} );
+          .emit('clienteConnected',{ cliente, isOnline: true,cliente} );
           console.log("clientConnected",connectedUsers.get(user._id.toString()))
         }
       })
@@ -119,7 +120,7 @@ export default function initializeSocket(io) {
       const clientes = await Cliente.find({ _id: { $in: _connectedClientes } });
 
       socket.emit('clientesOnlineStatus',{onlineClientes:clientes,onlineUsers:users})
-      console.log("clientesOnlineStatus",clientes)
+      //console.log("clientesOnlineStatus",clientes)
       
       clientes.forEach(async(cliente)=>{  
         if(connectedClientes.get(cliente._id.toString())){
@@ -134,41 +135,33 @@ export default function initializeSocket(io) {
 
 
     socket.on("update_client_profile",async(data)=>{
-      console.log("update_client_profile",data)
+      //console.log("update_client_profile",data)
       const users = await User.find()
       
 
       if(users.length){
 
         users.forEach(async(user)=>{
-          console.log("user",user)
+          //console.log("user",user)
           const notification = new Notification({
             user_id:user._id,
-            message:"El/la cliente "+data.nickname+" ha actualizado su perfil",
+            message:data.nickname+" ha actualizado su perfil",
             room:null,
-            type:"profile_update",
+            type:"profile_updated",
             sender_client_id:data._id,
             link:"/clients/"+data.sqlite_id
           })
           await notification.save()
+
           user.notification.push(notification._id)
           await user.save()
           console.log(user._id.toString())
-          console.log(connectedUsers)
+          //console.log(connectedUsers)
           if(connectedUsers.get(user._id.toString())){
             console.log("user",user.username)
            
             
-            io.to(connectedUsers.get(user._id.toString())).emit('newNotification',{
-              _id:notification._id,
-              message:notification.message,
-              type:notification.type,
-              link:notification.link,
-              sender_client_id:notification.sender_client_id,
-              user_id:notification.user_id,
-              read:notification.read,
-
-            })
+            io.to(connectedUsers.get(user._id.toString())).emit('newNotification',notification)
           }
         })
         
@@ -177,7 +170,7 @@ export default function initializeSocket(io) {
     
 
     socket.on("joinRoom",async(data)=>{
-      console.log("joinRoom",data)
+      //console.log("joinRoom",data)
       const room = await Room.findOne({_id:data.roomId})
       const user = await User.findOne({_id:socket.userId})
       const client = await Cliente.findOne({_id:socket.clienteId})
@@ -275,7 +268,7 @@ export default function initializeSocket(io) {
         const users = await User.find({_id:{$in:Array.from(connectedUsers.keys())}})
         if(users){
           users.forEach(async(user)=>{
-            io.to(connectedUsers.get(user._id.toString())).emit('clientDisconnected',{clienteId:socket.clienteId})
+            io.to(connectedUsers.get(user._id.toString())).emit('clienteDisconnected',{clienteId:socket.clienteId})
           })
         }
         
@@ -289,6 +282,7 @@ export default function initializeSocket(io) {
     });
   });
 }
+
 
 export function getReceiverSocketId(to,receiverId) {
   if(to === "user"){
@@ -332,22 +326,26 @@ export function sendNotificationToUser(to,id, notificationData) {
       console.log(`Cliente ${id} no conectado. Notificación no enviada en tiempo real.`);
     }
   }
-} 
-/* export function sendNotificationToCiente(clienteId, notificationData) {
-  if (!mainIo) { // Usar mainIo, la instancia exportada de index.js
+}
+
+/**
+ * Envía una notificación a todos los usuarios conectados (tanto clientes como usuarios del sistema).
+ * @param {object} notificationData Datos de la notificación.
+ */
+export function sendNotificationToAll(notificationData) {
+  if (!mainIo) {
     console.error('Socket.IO server (mainIo) not initialized in socketHandler.');
     return;
   }
-  const socketId = getReceiverSocketId(clienteId);
-  if (socketId) {
-    console.log(`Sending notification to clienteId ${clienteId} (socketId ${socketId}):`, notificationData);
-    mainIo.to(socketId).emit('new_notification', notificationData);
-  } else {
-    console.log(`Cliente ${clienteId} no conectado. Notificación no enviada en tiempo real.`);
-    // Aquí podrías guardar la notificación en la BD para mostrarla cuando el usuario se conecte,
-    // o si ya tienes un sistema de notificaciones persistentes, asegurar que se guarde.
-  }
-}  */
+
+  console.log('Sending notification to all connected users:', notificationData);
+  
+  // Enviar a todos los usuarios del sistema (admin, collector, etc.)
+  mainIo.emit('newNotification', notificationData);
+  
+  // También enviar a todos los clientes conectados
+  mainIo.emit('new_notification', notificationData);
+}
 
 
 //const uri = ;

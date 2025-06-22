@@ -4,7 +4,8 @@ import {
   getNotificationsForUser,
   getNotificationsForClient,
   markNotificationAsRead,
-  deleteNotification
+  deleteNotification,
+  createNotificationFromApp
 } from '../controllers/notificationController.js';
 import { verificarToken } from '../middleware/authMiddleware.js';
 
@@ -26,7 +27,8 @@ router.post('/mark-read', [verificarToken], markNotificationAsRead);
 // Eliminar una notificación
 router.delete('/:notificationId', [verificarToken], deleteNotification);
 
+router.post('/createfromapp', [verificarToken], createNotificationFromApp);
 
-router.put('/create',[verificarToken],createNotification)
+router.post('/create',[verificarToken],createNotification)
 
 export default router; 

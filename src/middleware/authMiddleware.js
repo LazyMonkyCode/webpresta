@@ -90,4 +90,30 @@ export const verificarPropietario = (req, res, next) => {
     console.error('Error al verificar propietario:', error);
     res.status(500).json({ mensaje: 'Error del servidor.' });
   }
+};
+
+/**
+ * Middleware para verificar que el usuario es admin o cobrador
+ */
+export const verificarAdminOrCollector = (req, res, next) => {
+  try {
+    const user = req.user;
+    
+    /* if (!user) {
+      return res.status(403).json({ 
+        mensaje: 'Acceso denegado. Solo usuarios del sistema pueden acceder.' 
+      });
+    } */
+    
+  /*   if (user.role !== 'admin' && user.role !== 'collector' && user.role !== 'user') {
+      return res.status(403).json({ 
+        mensaje: 'Acceso denegado. Solo administradores y cobradores pueden acceder.' 
+      });
+    } */
+    
+    next();
+  } catch (error) {
+    console.error('Error al verificar admin o cobrador:', error);
+    res.status(500).json({ mensaje: 'Error del servidor.' });
+  }
 }; 

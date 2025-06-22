@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 // import { Link } from 'react-router-dom'; // Eliminado por no usarse
-import { useAuth } from '../context/AuthContext'; // Activado
-import apiService, { Prestamo } from '../services/api'; // Importar Prestamo de api.ts
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/index';
+import apiService from '../services/api'; // Importar Prestamo de api.ts
 import LoadingSpinner from '../components/LoadingSpinner';
 import PaymentModal from '../components/PaymentModal'; // Importar el modal de pago
 import ReusableTable, { Column } from '../components/ReusableTable'; // Importar la tabla reutilizable
+import PaymentsList from '../components/PaymentsList'; // Importar el componente de lista
 import { Paperclip, Eye, HelpCircle } from 'lucide-react'; // HelpCircle eliminado por no usarse
 // import DatePicker from 'react-datepicker'; // Se añadirá si se implementa un selector de fecha específico
 // import 'react-datepicker/dist/react-datepicker.css';
@@ -55,7 +57,7 @@ interface LoanForFilter {
 const ITEMS_PER_PAGE = 10;
 
 const PaymentsPage: React.FC = () => {
-  const { user } = useAuth(); // Activado
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const [payments, setPayments] = useState<Pago[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -76,6 +78,44 @@ const PaymentsPage: React.FC = () => {
 
   const [selectedPayment, setSelectedPayment] = useState<Pago | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  // Estado para la vista de pagos (tabla o lista)
+  const [paymentViewMode, setPaymentViewMode] = useState<'table' | 'list'>('table');
+
+  // Cargar configuración de vista de pagos del localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('notificationSettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        if (parsed.paymentViewMode) {
+          setPaymentViewMode(parsed.paymentViewMode);
+        }
+      } catch (error) {
+        console.error('Error al cargar configuración de vista:', error);
+      }
+    }
+  }, []);
+
+  // Escuchar cambios en la configuración de vista
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedSettings = localStorage.getItem('notificationSettings');
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          if (parsed.paymentViewMode) {
+            setPaymentViewMode(parsed.paymentViewMode);
+          }
+        } catch (error) {
+          console.error('Error al cargar configuración de vista:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Carga inicial de préstamos para el filtro
   const fetchLoansForFilter = useCallback(async () => {
@@ -420,7 +460,7 @@ const PaymentsPage: React.FC = () => {
         </div>
       )}
       
-      {/* ReusableTable Integration */}
+      {/* Vista de Pagos */}
       {isLoading && payments.length === 0 && <LoadingSpinner />} 
       {!isLoading && payments.length === 0 && !error && (
          <div className="text-center py-10">
@@ -428,19 +468,64 @@ const PaymentsPage: React.FC = () => {
           </div>
       )}
       {payments.length > 0 && (
-        <ReusableTable<Pago>
-          columns={paymentTableColumns}
-          data={payments}
-          keyExtractor={(pago) => pago._id}
-          onSort={(columnKey) => handleSort(columnKey as keyof Pago | 'loan_label' | 'actions' | 'comprobantes')}
-          sortColumn={sortConfig.key as string}
-          sortOrder={sortConfig.direction as ('asc' | 'desc')}
-          tableClassName="min-w-full divide-y divide-gray-200 bg-white shadow-md rounded-lg"
-          headerRowClassName="bg-gray-50"
-          bodyRowClassName="hover:bg-gray-50 transition-colors duration-150"
-          emptyStateMessage="No se encontraron pagos."
-          // onRowClick={handleOpenModal} // Opcional: si quieres que toda la fila abra el modal
-        />
+        <>
+          {/* Selector de Vista */}
+          <div className="mb-4 flex justify-end">
+            <div className="flex items-center space-x-2 bg-white border border-gray-200 rounded-lg p-1">
+              <button
+                onClick={() => setPaymentViewMode('table')}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                  paymentViewMode === 'table'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>Tabla</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setPaymentViewMode('list')}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                  paymentViewMode === 'list'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                  <span>Lista</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Renderizado condicional según la vista seleccionada */}
+          {paymentViewMode === 'table' ? (
+            <ReusableTable<Pago>
+              columns={paymentTableColumns}
+              data={payments}
+              keyExtractor={(pago) => pago._id}
+              onSort={(columnKey) => handleSort(columnKey as keyof Pago | 'loan_label' | 'actions' | 'comprobantes')}
+              sortColumn={sortConfig.key as string}
+              sortOrder={sortConfig.direction as ('asc' | 'desc')}
+              tableClassName="min-w-full divide-y divide-gray-200 bg-white shadow-md rounded-lg"
+              headerRowClassName="bg-gray-50"
+              bodyRowClassName="hover:bg-gray-50 transition-colors duration-150"
+              emptyStateMessage="No se encontraron pagos."
+            />
+          ) : (
+            <PaymentsList
+              payments={payments}
+              onPaymentClick={handleOpenModal}
+            />
+          )}
+        </>
       )}
 
       {/* Paginación */}

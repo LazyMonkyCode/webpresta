@@ -1,10 +1,11 @@
 import React from 'react';
 // import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
+import { RootState   } from '../store/index';
 
 const ProfileDisplayPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
   console.log(user)
   if (!user) {

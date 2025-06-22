@@ -218,10 +218,14 @@ export const createCliente = async (req, res) => {
     
     
     // Generar código de acceso único de 5 dígitos si no se proporciona
-    if (!clienteData.codigoAcceso) {
-      // Generar un número aleatorio entre 10000 y 99999
-      clienteData.codigoAcceso = Math.floor(10000 + Math.random() * 90000).toString();
-    }
+    
+    clienteData.codigoAcceso =!clienteData.access_code ?
+    
+    Math.floor(10000 + Math.random() * 90000).toString()
+    : 
+    clienteData.access_code;
+
+
     
     const cliente = new Cliente(clienteData);
     const savedCliente = await cliente.save();
