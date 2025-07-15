@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Activity } from '../types';  
 
 // Definición de tipos
 export interface Cliente {
@@ -15,7 +16,9 @@ export interface Cliente {
   emailVerified?:boolean;
   phoneVerified?:boolean;
   role?: string;
-}
+  password?: string;
+  activities?: Activity[];
+    }
 
 export interface Prestamo {
   _id: string;
@@ -246,7 +249,7 @@ const apiService = {
   },
   
   // Solicitar nuevo préstamo
-  requestLoan: async (loanData: { amount: number; installments: number; disbursementDate: string }) => {
+  requestLoan: async (loanData: { amount: number; installments: number; disbursementDate: string,proposito?:string }) => {
     try {
       const response = await api.post('/prestamos/request', loanData);
       return response.data;
@@ -462,7 +465,52 @@ const apiService = {
       console.error('Error fetching current user activities:', error);
       throw error;
     }
-  }
+  },
+  createClientActivity: async (activity: any) => {
+    try {
+      const response = await api.post('/activities/client/create', activity);
+      console.log(response," ")
+      return response.data;
+    } catch (error) {
+      console.error('Error creating client activity:', error);
+      throw error;
+    }
+  },
+  createActivity: async (activity: Activity) => {
+    try {
+      const response = await api.post('/activities/create', activity);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating activity:', error);
+      throw error;
+    }
+  },
+
+  // Actualizar préstamo pendiente
+  updatePendingLoan: async (prestamoId: string, data: { amount: number; disbursementDate: string; purpose?: string,proposito?:string }) => {
+    try {
+      const response = await api.put(`/prestamos/${prestamoId}/pending`, {
+        amount: data.amount,
+        disbursementDate: data.disbursementDate,
+        proposito: data.purpose || '',
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error actualizando préstamo pendiente:', error);
+      throw error;
+    }
+  },
+
+  // Eliminar préstamo pendiente
+  deleteLoan: async (prestamoId: string) => {
+    try {
+      const response = await api.delete(`/prestamos/${prestamoId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error eliminando préstamo:', error);
+      throw error;
+    }
+  },
 };
 
 export default apiService; 

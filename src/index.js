@@ -10,9 +10,9 @@ import clienteRoutes from './routes/clienteRoutes.js'
 import prestamoRoutes from './routes/prestamoRoutes.js'
 import pagoRoutes from './routes/pagoRoutes.js'
 /* import chatRoutes from './routes/chatRoutes.js' */
-import notificationRoutes from './routes/notificationRoutes.js'
+ import notificationRoutes from './routes/notificationRoutes.js' 
 import activityRoutes from './routes/activityRoutes.js'
-import initializeSocket from './socketHandler.js'
+/* import initializeSocket from './socketHandler.js' */
 import dotenv from 'dotenv'
 import cors from 'cors'
 //import ngrok from '@ngrok/ngrok'
@@ -26,19 +26,18 @@ const __dirname = path.dirname(__filename)
 
 // Configuración de variables de entorno
 const PORT = process.env.PORT || 4000
-const uri = "mongodb+srv://wtf2233:wwfXaR1e1cOsBWZv@cluster0.2yipgj7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+/* const uri = "mongodb+srv://wtf2233:wwfXaR1e1cOsBWZv@cluster0.2yipgj7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; */
 const MONGODB_URI = process.env.MONGODB_URI_LOCAL || uri
 
-
+ 
 // Inicializar la aplicación Express
 const app = express()
-
 
 const server = http.createServer(app)
 export const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
-      const allowedOrigins = [process.env.CLIENT_URL || "http://localhost:3000", "http://localhost:3005", "http://localhost:3006"]
+      const allowedOrigins = [process.env.CLIENT_URL || "http://localhost:3000","http://localhost:3001", "http://localhost:3005", "http://localhost:3006"]
       
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -48,7 +47,7 @@ export const io = new Server(server, {
     }, 
     methods: ["GET", "POST"]
   }
-})
+}) 
 
 
 // Middlewareadd .
@@ -70,8 +69,10 @@ app.use(morgan('dev')) // Logging
 
   const allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:3001',
     'http://localhost:3005',
-    'http://localhost:3006'
+    'http://localhost:3006',
+    'http://localhost:4000'
   ];
   
   app.use(cors({
@@ -89,12 +90,18 @@ app.use('/api/auth', authRoutes)
 app.use('/api/clientes', clienteRoutes)
 app.use('/api/prestamos', prestamoRoutes)
 app.use('/api/pagos', pagoRoutes)
-/* app.use('/api/chat', chatRoutes) */
-app.use('/api/notifications', notificationRoutes)
 app.use('/api/activities', activityRoutes)
+app.use('/api/notifications', notificationRoutes)
 
+/* app.use('/api/chat', chatRoutes) */
+/* 
+ */
 // Initialize Socket.IO connection handling
-initializeSocket(io)
+//initializeSocket(io)
+
+ import SocketHandler from './socket/SocketHandler.js'
+export const socketHandler = new SocketHandler(io,{auth:{token:process.env.JWT_SECRET}})
+
 
 // Servir archivos estáticos de React en producción
 /* if (process.env.NODE_ENV == 'production') { */

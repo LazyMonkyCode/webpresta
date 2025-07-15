@@ -82,10 +82,15 @@ export const getResumenCliente = async (req, res) => {
 
     prestamos.forEach(prestamo => {
       if (prestamo.payments && prestamo.payments.length > 0) {
+        
         prestamo.payments.forEach(pago => {
-          if (pago.status && (pago.status.toLowerCase() === 'paid' || pago.status.toLowerCase() === 'completado')) {
+
+          console.log("pago",pago.status)
+          if (pago.status && (pago.status.toLowerCase() === 'paid' )) {
             totalPagadoReal += pago.amount;
-          } else if (pago.status && pago.status.toLowerCase() !== 'paid' && pago.status.toLowerCase() !== 'completado') {
+          } else if (pago.status && pago.status.toLowerCase() !== 'paid'  ) {
+
+            console.log("pago",pago.status)
             // Consideramos pendiente cualquier cosa que no sea 'paid' o 'completado'
             // Aquí podrías ser más específico si tienes otros estados como 'anulado' que no cuentan como pendiente.
             totalPendienteReal += pago.amount; 

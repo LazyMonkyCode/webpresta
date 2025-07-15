@@ -5,7 +5,8 @@ import {
   getActivitiesSummary, 
   getActivityById,
   getLastActivity,
-  getUnsyncedActivities
+  getUnsyncedActivities,
+  createClientActivity
 } from '../controllers/activityController.js';
 import { verificarToken, verificarAdminOrCollector } from '../middleware/authMiddleware.js';
 
@@ -17,6 +18,8 @@ router.get('/summary', [verificarToken, verificarAdminOrCollector], getActivitie
 router.get('/admin/:adminId', [verificarToken, verificarAdminOrCollector], getAdminActivities);
 router.get('/last', [verificarToken], getLastActivity);
 router.get('/unsynced', [verificarToken], getUnsyncedActivities);
+router.post('/client/create', [verificarToken, verificarAdminOrCollector], createClientActivity); 
+
 router.get('/:id', [verificarToken, verificarAdminOrCollector], getActivityById);
 
 export default router; 

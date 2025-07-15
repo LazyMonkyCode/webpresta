@@ -18,7 +18,7 @@ const ProfileNotifications: React.FC = () => {
 
   const getNotificationIcon = (type: string) => {
     const iconConfig = {
-      'success': (
+      'payment_marked_as_paid': (
         <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
@@ -60,7 +60,9 @@ const ProfileNotifications: React.FC = () => {
       'error': 'bg-red-100 text-red-800 border-red-200',
       'info': 'bg-blue-100 text-blue-800 border-blue-200',
       'admin_activity': 'bg-purple-100 text-purple-800 border-purple-200',
-      'loan_created': 'bg-green-100 text-green-800 border-green-200'
+      'loan_created': 'bg-green-100 text-green-800 border-green-200',
+      'payment_marked_as_paid': 'bg-green-100 text-green-800 border-green-200',
+      'payment_marked_as_overdue': 'bg-red-100 text-red-800 border-red-200'
     };
 
     return badgeConfig[type as keyof typeof badgeConfig] || badgeConfig.info;
@@ -76,6 +78,25 @@ const ProfileNotifications: React.FC = () => {
       // navigate(notification.link);
     }
   };
+
+  const notificationTitle = (notification: any) => {
+    if(notification.type === 'loan_request'){
+      return 'Nuevo préstamo pendiente de aprobación: '+notification.data.clienteNombre;
+    }
+    if(notification.type === 'loan_request_approved'){
+      return 'Préstamo aprobado: '+notification.data.clienteNombre;
+    }
+    if(notification.type === 'loan_request_rejected'){
+      return 'Préstamo rechazado: '+notification.data.clienteNombre;
+    }
+    if(notification.type === 'payment_marked_as_paid'){ 
+      return 'Pago marcado como pagado: '+notification.data.prestamoId+' - '+notification.data.prestamoLabel;
+    }
+    if(notification.type === 'payment_marked_as_overdue'){
+      return 'Pago marcado como vencido: '+notification.data.prestamoId+' - '+notification.data.prestamoLabel;
+    }
+    return notification.message;
+  }
 
   if (filteredNotifications.length === 0) {
     return (
@@ -138,13 +159,10 @@ const ProfileNotifications: React.FC = () => {
                     </p>
                     <div className="flex items-center space-x-2 mt-2">
                       <span className="text-xs text-gray-500">
-                        {notification.created_at ? formatDate(notification.created_at) : ''}
+                        {notification.timestamp ? formatDate(notification.timestamp) : ''}
                       </span>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getNotificationBadge(notification.type)}`}>
-                        {notification.type === 'admin_activity' ? 'Actividad' : 
-                         notification.type === 'success' ? 'Éxito' :
-                         notification.type === 'warning' ? 'Advertencia' :
-                         notification.type === 'error' ? 'Error' : 'Info'}
+                        {notificationTitle(notification)}
                       </span>
                     </div>
                   </div>

@@ -14,7 +14,7 @@ class AddressValidationService {
 
   constructor() {
     // Obtener la API key desde las variables de entorno
-    this.apiKey = process.env.REACT_APP_GOOGLE_PLACES_API_KEY || '';
+    this.apiKey = process.env.REACT_APP_GOOGLE_PLACES_API_KEY || 'AIzaSyBhYe-8qPeldvRXYbg-E-_YqsuRZg_ahrI';
   }
 
   // Validar si una dirección existe usando Google Places API

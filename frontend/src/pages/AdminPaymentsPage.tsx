@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/index';
-import apiService, { Pago } from '../services/api';
+import apiService, { Cliente, Pago, Prestamo } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { toast } from 'react-toastify';
 import { format, parseISO, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
+import socketService from 'services/socketService';
 
 interface PaymentSummary {
   totalPayments: number;
@@ -24,8 +25,9 @@ interface PaymentSummary {
 interface AdminPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  payment: Pago | null;
-  onPaymentUpdate: (paymentId: string, status: string, amount?: number, method?: string) => void;
+  payment: any;
+  onPaymentUpdate: (paymentId: string, status: string, amount: number,
+     prestamoLabel: string, paymentLabel: string, method: string, client_id: string, prestamo_id: string,client_name?:string) => void;
 }
 
 const AdminPaymentModal: React.FC<AdminPaymentModalProps> = ({
@@ -41,6 +43,8 @@ const AdminPaymentModal: React.FC<AdminPaymentModalProps> = ({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+
+    console.log("payment",payment)
     if (payment) {
       setStatus(payment.status);
       setIncompleteAmount(payment.incomplete_amount || 0);
@@ -57,8 +61,13 @@ const AdminPaymentModal: React.FC<AdminPaymentModalProps> = ({
       await onPaymentUpdate(
         payment._id,
         status,
-        status === 'incomplete' ? incompleteAmount : undefined,
-        paymentMethod
+        status === 'incomplete' ? incompleteAmount : payment.amount,
+        payment.prestamoLabel,
+        payment.paymentLabel,
+        paymentMethod,
+        payment.client_id,
+        payment.prestamo_id,
+        payment.cliente
       );
       toast.success('Pago actualizado exitosamente');
       onClose();
@@ -241,7 +250,17 @@ const AdminPaymentsPage: React.FC = () => {
     fetchPayments();
   }, [fetchPayments]);
 
-  const handlePaymentUpdate = async (paymentId: string, status: string, amount?: number, method?: string) => {
+  const handlePaymentUpdate = async (
+    paymentId: string,
+     status: string,
+     amount: number,
+     prestamoLabel?:string,
+     paymentLabel?:string, 
+     method?: string,
+     client_id?:string,
+     prestamo_id?:string,
+     client_name?:string,
+     ) => {
     try {
       await apiService.updateAdminPayment(paymentId, {
         status,
@@ -249,6 +268,136 @@ const AdminPaymentsPage: React.FC = () => {
         payment_method: method
       });
       
+     socketService.emit('new_notification', {
+        from_user: user?._id,
+        to_client: client_id,
+        type: 'payment_updated',
+        title: 'Pago Actualizado a '+status === 'paid' ? 'Pagado' : status === 'pending' ? 'Pendiente' : status === 'incomplete' ? 'Incompleto' : 'Expirado',
+        message: `Tu pago de ${amount} para el préstamo "${prestamoLabel}" ha sido ${status === 'paid' ?
+             'marcado como pagado' : status === 'incomplete' ? 
+             'marcado como incompleto' : 'marcado como pendiente'} 
+             por ${user?.username} (${user?.role === 'admin' ? 'Administrador' : 'Cobrador'})`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        data: {
+          payment_id: paymentId,
+          payment_amount: amount,
+          loan_label: prestamoLabel,
+          status: status,
+          payment_label: paymentLabel,
+          prestamo_label: prestamoLabel,
+          client_id: client_id,
+          prestamo_id: prestamo_id
+        }
+      });
+
+
+      socketService.emit('new_notification', {
+        from_user: user?._id,
+        to_user: "every_user",
+        type: 'payment_updated_admin',
+        title: 'Pago Actualizado a '+status === 'paid' ? 'Pagado' : status === 'pending' ? 'Pendiente' : status === 'incomplete' ? 'Incompleto' : 'Expirado',
+        message: ` 
+        ${user?.username} (${user?.role === 'admin' ? 'Administrador' : 'Cobrador'})
+         ${status === 'paid' ? 'marcó como pagado' :  status === 'pending' ? 'marcó como pendiente' :  status === 'incomplete' ? 
+          'marcó como incompleto' : 'marcó como pendiente'} el pago de ${amount} para el préstamo "${prestamoLabel}" del cliente ${client_name}
+    `,
+        timestamp: new Date().toISOString(),
+        read: false,
+        data: {
+          payment_id: paymentId,
+          payment_amount: amount,
+          loan_label: prestamoLabel,
+          status: status,
+          payment_label: paymentLabel,
+          prestamo_label: prestamoLabel,
+          client_id: client_id,
+          prestamo_id: prestamo_id
+        }
+      }); 
+      /* 
+      
+      */
+       // Preparar datos para notificación
+    /* const notificationData = {
+      
+      type: 'admin_activity',
+      title: 'Actividad de Cobranza',
+      message: `${adminUser.name} ${adminUser.lastname} (${adminUser.role === 'admin' ? 'Administrador' : 'Cobrador'}) ${status === 'paid' ? 'marcó como pagado' : status === 'incomplete' ? 'marcó como incompleto' : 'marcó como pendiente'} el pago de ${pago.amount} del cliente ${cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente'} para el préstamo "${prestamo?.label}"`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      data: {
+        admin_id: adminUser._id,
+        admin_name: adminUser.username ? adminUser.username : adminUser.name + ' ' + adminUser.lastname,
+        admin_role: adminUser.role,
+        action: action,
+        payment_id: pago._id,
+        payment_sqlite_id: pago.sqlite_id || 0,
+        client_sqlite_id: cliente?.sqlite_id || 0,
+        client_name: cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente no encontrado',
+        loan_label: prestamo?.label || 'Préstamo no encontrado',
+        payment_amount: pago.amount,
+        previous_status: previousStatus,
+        new_status: status,
+        payment_method: payment_method || pago.payment_method,
+        incomplete_amount: incomplete_amount
+      }
+    };
+
+    const notification = new Notification({
+      type: 'admin_activity',
+      title: 'Actividad de Cobranza',
+      message: `${adminUser.username ? adminUser.username : adminUser.name + ' ' + adminUser.lastname} 
+      
+      (${adminUser.role === 'admin' ? 'Administrador' : 'Cobrador'}) 
+      ${status === 'paid' ? 
+        'marcó como pagado' : status === 'incomplete' ? 
+        'marcó como incompleto' : 'marcó como pendiente'} 
+        el pago de ${pago.amount} del cliente 
+        ${cliente ? (cliente.nickname 
+          || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente'}
+           para el préstamo "${prestamo?.label}"`,
+      timestamp: new Date().toISOString(),
+      read: false,
+    });
+
+    // Enviar notificación a todos los usuarios conectados
+    //sendNotificationToAll(notificationData);
+
+    // Enviar notificación específica al cliente para cualquier cambio de estado
+    if (cliente) {
+      let clientNotificationTitle = '';
+      let clientNotificationMessage = '';
+      
+      if (status === 'paid') {
+        clientNotificationTitle = 'Pago Confirmado';
+        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido confirmado por ${adminUser.name} ${adminUser.lastname}.`;
+      } else if (status === 'incomplete') {
+        clientNotificationTitle = 'Pago Incompleto';
+        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido marcado como incompleto. Monto pagado: ${incomplete_amount}. Método: ${payment_method || 'No especificado'}.`;
+      } else if (status === 'pending') {
+        clientNotificationTitle = 'Pago Pendiente';
+        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido marcado como pendiente por ${adminUser.name} ${adminUser.lastname}.`;
+      }
+      
+      const clientNotificationData = {
+        
+        type: status === 'paid' ? 'success' : status === 'incomplete' ? 'warning' : 'info',
+        title: clientNotificationTitle,
+        message: clientNotificationMessage,
+        timestamp: new Date().toISOString(),
+        read: false,
+        link: `/loans/${prestamo?._id}`,
+        data: {
+          payment_id: pago._id,
+          payment_amount: pago.amount,
+          loan_label: prestamo?.label,
+          status: status,
+          admin_name: adminUser.name + ' ' + adminUser.lastname,
+          incomplete_amount: incomplete_amount,
+          payment_method: payment_method
+        }
+      };  */
       // Actualizar la lista local con tipos correctos
       setPayments(prev => prev.map(p => 
         p._id === paymentId 

@@ -1,6 +1,22 @@
 import Prestamo from '../models/prestamo.js';
 import Pago from '../models/pago.js';
 import Cliente from '../models/cliente.js';
+import User from '../models/user.js';
+import Notification from '../models/notification.js';
+// Obte
+// 
+// 
+// 
+// Obtener préstamos pendientes
+export const getPendingLoans = async (req, res) => {
+  try {
+    const prestamos = await Prestamo.find({ status: 'pending' }).populate('client_id');
+    res.json(prestamos);
+  } catch (error) {
+    console.error('Error al obtener préstamos pendientes:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
+};
 
 // Obtener préstamo por ID
 export const getPrestamoById = async (req, res) => {
@@ -194,7 +210,13 @@ export const createPrestamo = async (req, res) => {
       delete payment.id
       return {...payment, loan_id:savedPrestamo._id,sqlite_id:sqlite_id}
     });
+
     const savedPayments = await Pago.insertMany(_payments);
+   // console.log("savedPayments",savedPayments)
+    await Prestamo.findByIdAndUpdate(
+      savedPrestamo._id,
+      { $push: { payments: savedPayments } }
+    );
     
     res.status(201).json(savedPrestamo);
   } catch (error) {
@@ -214,8 +236,8 @@ export const updatePrestamo = async (req, res) => {
     delete prestamo.created_at;
     delete prestamo.updated_at;
     
-    const _prestamo = await Prestamo.findByIdAndUpdate(
-      id,
+    const _prestamo = await Prestamo.findOneAndUpdate(
+      {sqlite_id:id.toString()},
       prestamo,
       { new: true, runValidators: true }
     );
@@ -249,9 +271,10 @@ export const updatePrestamo = async (req, res) => {
 // Eliminar préstamo
 export const deletePrestamo = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const prestamo = await Prestamo.findOne({sqlite_id:id.toString()})
+    const { prestamoId } = req.params;
+    console.log("prestamoId",req.params)
+    const idQuery = typeof prestamoId !== 'number' ? {_id:prestamoId} : {sqlite_id:prestamoId.toString()}
+    const prestamo = await Prestamo.findOne(idQuery)
     if (!prestamo) {
       return res.status(404).json({ mensaje: 'Préstamo no encontrado' });
     }
@@ -310,7 +333,7 @@ export const getLoansForFilter = async (req, res) => {
 // Crear solicitud de préstamo pendiente
 export const createLoanRequest = async (req, res) => {
   try {
-    const { amount, installments, disbursementDate } = req.body;
+    const { amount, disbursementDate, proposito } = req.body;
     const clienteId = req.clienteId;
 
     // Validar datos de entrada
@@ -319,13 +342,6 @@ export const createLoanRequest = async (req, res) => {
         mensaje: 'El monto debe estar entre $10,000 y $10,000,000' 
       });
     }
-
-    if (!installments || installments < 1 || installments > 60) {
-      return res.status(400).json({ 
-        mensaje: 'El número de cuotas debe estar entre 1 y 60' 
-      });
-    }
-
     if (!disbursementDate) {
       return res.status(400).json({ 
         mensaje: 'La fecha de desembolso es requerida' 
@@ -333,9 +349,14 @@ export const createLoanRequest = async (req, res) => {
     }
 
     // Validar que el cliente existe
-    const cliente = await Cliente.findById(clienteId);
+    const cliente = await Cliente.findById(clienteId).populate('loans');
     if (!cliente) {
       return res.status(404).json({ mensaje: 'Cliente no encontrado' });
+    }
+
+    const prestamoPendiente = cliente.loans.find(prestamo => prestamo.status === 'pending');
+    if(prestamoPendiente){
+      return res.status(400).json({ mensaje: 'El cliente ya tiene un préstamo pendiente' });
     }
 
     // Crear el préstamo pendiente
@@ -345,43 +366,68 @@ export const createLoanRequest = async (req, res) => {
       total_amount: amount,
       interest_rate: 0, // Se establecerá cuando se apruebe
       payment_interval: 'monthly',
-      installment_number: installments,
+      installment_number: 1, // Solo una cuota por defecto
       loan_date: disbursementDate,
       status: 'pending',
       label: `Solicitud - $${amount.toLocaleString()}`,
       total_paid: 0,
       remaining_amount: amount,
       gain: 0,
-      term: installments
+      proposito: proposito || '',
+      term: 1
     });
 
     const prestamoGuardado = await nuevoPrestamo.save();
 
     // Actualizar el cliente con la referencia al préstamo
-    await Cliente.findByIdAndUpdate(
+    const clienteActualizado = await Cliente.findByIdAndUpdate(
       clienteId,
       { $push: { loans: prestamoGuardado._id } }
-    );
+    ).select('_id name lastname email nickname sqlite_id phone loans');
 
     // Emitir evento de socket para notificar a administradores
-    const { io } = await import('../index.js');
-    io.emit('loan_request_created', {
-      prestamoId: prestamoGuardado._id,
-      clienteId: clienteId,
-      clienteNombre: `${cliente.name} ${cliente.lastname}`,
-      amount: amount,
-      installments: installments,
-      disbursementDate: disbursementDate,
-      timestamp: new Date().toISOString()
-    });
+   /*  const { getConnectedUsers} = await import('../socketHandler.js');
+    const {io} = await import('../index.js'); */
+    const users = await User.find();
+
+
+   
 
     res.status(201).json({
       mensaje: 'Solicitud de préstamo creada exitosamente',
-      prestamo: prestamoGuardado
+      prestamo: prestamoGuardado,
+      cliente: clienteActualizado
     });
 
   } catch (error) {
     console.error('Error al crear solicitud de préstamo:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
+};  
+
+// Actualizar préstamo pendiente (solo si está en estado pending)
+export const updatePendingLoan = async (req, res) => {
+  try {
+    const { prestamoId } = req.params;
+    const { amount, disbursementDate, proposito } = req.body;
+    // Buscar el préstamo
+    const prestamo = await Prestamo.findById(prestamoId);
+    if (!prestamo) {
+      return res.status(404).json({ mensaje: 'Préstamo no encontrado' });
+    }
+    if (prestamo.status !== 'pending') {
+      return res.status(400).json({ mensaje: 'Solo se pueden editar préstamos pendientes' });
+    }
+    // Actualizar campos permitidos
+    if (amount) prestamo.amount = amount;
+    if (disbursementDate) prestamo.loan_date = disbursementDate;
+    if (proposito !== undefined) prestamo.proposito = proposito;
+    prestamo.total_amount = prestamo.amount;
+    await prestamo.save();
+    const cliente = await Cliente.findById(prestamo.client_id).select('_id name lastname email nickname sqlite_id phone loans');
+    res.json({prestamo,cliente});
+  } catch (error) {
+    console.error('Error al actualizar préstamo pendiente:', error);
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 };  

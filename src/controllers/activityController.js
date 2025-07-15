@@ -1,5 +1,7 @@
 import Activity from '../models/activity.js';
-
+import ClientActivity from '../models/clientActivity.js';
+import Cliente from '../models/cliente.js';
+import User from '../models/user.js';
 // Obtener la última actividad
 export const getLastActivity = async (req, res) => {
   try {
@@ -23,6 +25,37 @@ export const getUnsyncedActivities = async (req, res) => {
   }
 };
 
+// Crear una nueva actividad
+
+export const createClientActivity = async (req, res) => {
+  try {
+    const activity = new ClientActivity(req.body);
+    await activity.save();
+
+    const client = await Cliente.findById(req.cliente._id);
+    client.activities.push(activity._id)
+    await client.save()
+    res.json(activity);
+  } catch (error) {
+    console.error('Error al crear actividad:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
+};
+
+export const createActivity = async (req, res) => {
+  try {
+    const activity = new Activity(req.body);
+    await activity.save();
+
+    const admin = await User.findById(req.adminId);
+    admin.activities.push(activity._id)
+    await admin.save()
+    res.json(activity);
+  } catch (error) {
+    console.error('Error al crear actividad:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
+};
 // Obtener todas las actividades con paginación
 export const getActivities = async (req, res) => {
   try {

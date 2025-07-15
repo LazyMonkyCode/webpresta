@@ -1,6 +1,6 @@
 import Notification from '../models/notification.js';
-import { getReceiverSocketId } from '../socketHandler.js'; // Asumiendo que esta función existe y está exportada
-import { io } from '../index.js'; // Importar la instancia de io desde index.js
+//import { getReceiverSocketId } from '../socketHandler.js'; // Asumiendo que esta función existe y está exportada
+//import { io } from '../index.js'; // Importar la instancia de io desde index.js
 import Cliente from '../models/cliente.js'
 import User from '../models/user.js'
 
@@ -8,22 +8,20 @@ import User from '../models/user.js'
 // Crear una nueva notificación
 export const createNotification = async (req, res) => {
   try {
-    const { user_id, client_id, type, message, link } = req.body;
+    const { from_user, to_user, from_client, to_client, type, message, link } = req.body;
     //console.log(req.body)
    // const sender_user_id = req.userId; // Asumiendo que el ID del usuario logueado está en req.user.id
 
-    if (!user_id && !client_id) {
-      return res.status(400).json({ message: 'Se requiere user_id o client_id' });
-    }
+  
 
     
 
     const notification ={}
 
-    if(req.clientId) notificación.sender_client_id = req.clientId
-    if(req.userId) notification.sender_user_id = req.userId
-    if(client_id) notification.client_id = client_id
-    if(user_id) notification.user_id = user_id
+    if(from_client) notification.from_client = from_client
+    if(from_user) notification.from_user = from_user
+    if(to_client) notification.to_client = to_client
+    if(to_user) notification.to_user = to_user
 
 
    
@@ -32,7 +30,7 @@ export const createNotification = async (req, res) => {
     let targetSocketId;
     let savedNotification
     
-    if (client_id) {
+    if (to_client) {
       const newNotification = new Notification({
         ...notification,
         type,
@@ -42,23 +40,23 @@ export const createNotification = async (req, res) => {
   
       savedNotification = await newNotification.save();
 
-      const cliente = await Cliente.findOne({_id:client_id})
+      const cliente = await Cliente.findOne({_id:to_client})
       cliente.notification.push(newNotification._id)
       cliente.save()
 
-      targetSocketId = getReceiverSocketId("client",client_id.toString());
+      targetSocketId = getReceiverSocketId("client",to_client.toString());
       if (targetSocketId && io) {
         io.to(targetSocketId).emit('new_notification', savedNotification);
-        console.log(`Notificación enviada por socket a cliente ${client_id}`);
+        console.log(`Notificación enviada por socket a cliente ${to_client}`);
       }
-    } else if (user_id) {
+    } else if (to_user) {
       const users = await User.find()
 
       users.forEach(async(user)=>{
 
         const newNotification = new Notification({
           ...notification,
-          user_id:user._id,
+          to_user:user._id,
           type,
           message,
           link
@@ -73,7 +71,7 @@ export const createNotification = async (req, res) => {
         console.log(targetSocketId)
         if (targetSocketId && io) {
           io.to(targetSocketId).emit('newNotification', savedNotification);
-          console.log(`Notificación enviada por socket a usuario ${user_id}`);
+          console.log(`Notificación enviada por socket a usuario ${to_user}`);
         }
       })
       
@@ -87,13 +85,19 @@ export const createNotification = async (req, res) => {
   }
 };
 
+
 // Obtener notificaciones para un usuario (admin/staff)
 export const getNotificationsForUser = async (req, res) => {
   try {
     const userId = req.user.id; // ID del usuario autenticado
-    const notifications = await Notification.find({ user_id: userId }).sort({ created_at: -1 });
+    const user = await User.findById(userId)
+    .populate({path:"notification",
+      sort:{created_at:-1},
+      match:{read:false},
+      populate:{path:"from_client",select:"name"}})
+    
     //console.log(notifications)
-    res.json(notifications);
+    res.json(user.notification);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener notificaciones del usuario', error: error.message });
   }
@@ -116,12 +120,16 @@ export const markNotificationAsRead = async (req, res) => {
     const { notificationIds } = req.body;
 
     if(Array.isArray(notificationIds)){
+      const errors = []
         notificationIds.forEach(async(notificationId)=>{
             const notification = await Notification.findByIdAndUpdate(notificationId, { read: true }, { new: true });
             if (!notification) {
-                return res.status(404).json({ message: 'Notificación no encontrada' });
+                console.log("Notificación no encontrada")
+                errors.push({notificationId,message:"Notificación no encontrada"})
             }
         })
+
+        return res.status(200).json({ message: 'Notificaciones marcadas como leídas', errors: errors });
     }else{
         const notification = await Notification.findByIdAndUpdate(notificationIds, { read: true }, { new: true });
         if (!notification) {
@@ -176,7 +184,7 @@ export const deleteNotification = async (req, res) => {
         user_id:user._id, 
         client_id:client._id, 
         type, message, link ,
-        message,
+        message, 
         link,
         data
       });

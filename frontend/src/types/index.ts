@@ -1,6 +1,6 @@
 export interface Notification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'admin_activity';
+  type: 'info' | 'success' | 'warning' | 'error' | 'admin_activity' | 'loan_created' | 'loan_approved' | 'loan_rejected' | 'loan_paid' | 'loan_overdue' | 'loan_cancelled' | 'loan_expired' | 'loan_renewed';
   title: string;
   message: string;
   timestamp: string; // Usaremos string para simplificar, se puede convertir a Date si es necesario

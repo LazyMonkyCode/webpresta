@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'; // Para generar IDs únicos para las notifi
 import socketService from '../services/socketService'; // Importar socketService
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/index';
+
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
@@ -79,8 +80,10 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       };
 
       socketService.on('new_notification', handleNewNotification);
-      socketService.on('newNotification', handleAdminActivity); // Para usuarios del sistema
       
+      socketService.on('newNotification', handleAdminActivity); // Para usuarios del sistema
+      socketService.on('sendNotification', handleAdminActivity); // Para usuarios del sistema
+
       // Aquí podrías cargar notificaciones iniciales/persistidas si es necesario
       // Ejemplo: fetchInitialNotifications();
 

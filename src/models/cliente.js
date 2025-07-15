@@ -67,6 +67,18 @@ const clienteSchema = new mongoose.Schema({
     type: String,
     select: false // No incluir en consultas por defecto
   },
+  email_verified: {
+    type: Boolean,
+    default: false
+  },
+  phone_verified: {
+    type: Boolean,
+    default: false
+  },
+  document_verified: {
+    type: Boolean,
+    default: false
+  },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -83,7 +95,11 @@ const clienteSchema = new mongoose.Schema({
   notification: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Notification'
-  }]	
+  }],
+  activities: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ClientActivity'
+  }]
 }, {
   timestamps: {
     createdAt: 'created_at',

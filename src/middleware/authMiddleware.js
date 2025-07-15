@@ -29,10 +29,11 @@ export const verificarToken = async (req, res, next) => {
     
     //console.log("decoded",decoded)
     // Buscar el cliente
-    const id = typeof  decoded.id === "number" ? {sqlite_id:decoded.id} : {_id:decoded.id};
+    const id = typeof  decoded.id === "number" ? {sqlite_id:decoded.id.toString()} : {_id:decoded.id};
     const cliente = await Cliente.findOne(id);
     const user = await User.findOne(id);
-
+   // console.log("auth middleware user",user)
+    //console.log("auth middleware cliente",cliente)
     //console.log("cliente",cliente,"user",user)
     if(!cliente && !user){
       return res.status(401).json({ mensaje: 'Cliente o usuario no encontrado.' });
@@ -95,6 +96,7 @@ export const verificarPropietario = (req, res, next) => {
 /**
  * Middleware para verificar que el usuario es admin o cobrador
  */
+
 export const verificarAdminOrCollector = (req, res, next) => {
   try {
     const user = req.user;

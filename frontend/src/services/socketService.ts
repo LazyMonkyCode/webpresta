@@ -11,7 +11,7 @@ class SocketService {
     if (!this.socket || !this.socket.connected) {
       console.log('Attempting to connect to WebSocket server...');
       this.socket = io(SOCKET_URL,{
-        reconnectionAttempts: 5,
+        reconnectionAttempts: 3,
         reconnectionDelay: 3000,
         transports: ['websocket'], // Prefer WebSocket
         auth: {

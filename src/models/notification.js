@@ -1,24 +1,28 @@
 import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema({
-  user_id: { // Para notificaciones a usuarios administradores/staff
+  to_user: { // Para notificaciones a usuarios administradores/staff
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
-  client_id: { // Para notificaciones a clientes
+  to_client: { // Para notificaciones a clientes
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Cliente',
   },
-  sender_user_id: { // El usuario que originó la notificación
+  from_user: { // El usuario que originó la notificación
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     
   }, 
-  sender_client_id: { // El cliente que originó la notificación
+  from_client: { // El cliente que originó la notificación
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Cliente',
     
   }, 
+  title: {
+    type: String,
+    
+  },
   type: {
     type: String,
     required: true,
@@ -44,10 +48,10 @@ const notificationSchema = new mongoose.Schema({
 });
 
 // Índices para mejorar el rendimiento de las consultas
-notificationSchema.index({ user_id: 1, read: 1, created_at: -1 });
-notificationSchema.index({ client_id: 1, read: 1, created_at: -1 });
-notificationSchema.index({ sender_user_id: 1, read: 1, created_at: -1 });
-notificationSchema.index({ sender_client_id: 1, read: 1, created_at: -1 });
+notificationSchema.index({ to_user: 1, read: 1, created_at: -1 });
+notificationSchema.index({ to_client: 1, read: 1, created_at: -1 });
+notificationSchema.index({ from_user: 1, read: 1, created_at: -1 });
+notificationSchema.index({ from_client: 1, read: 1, created_at: -1 });
 
 
 const Notification = mongoose.model('Notification', notificationSchema);

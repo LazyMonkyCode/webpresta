@@ -243,7 +243,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ show, onHide, payment: init
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4 transition-opacity duration-300 ease-in-out" style={{ display: show ? 'flex' : 'none'}}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-9999 flex justify-center items-center p-4 transition-opacity duration-300 ease-in-out" style={{ display: show ? 'flex' : 'none'}}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Modal Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200">

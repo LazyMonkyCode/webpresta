@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/index';
 import apiService from '../services/api';
-import { useDispatch } from 'react-redux';
 import { updateUserProfileInSlice, Cliente } from '../store/slices/authSlice';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { toast } from 'react-toastify';
@@ -11,69 +10,44 @@ import VerificationModal from '../components/VerificationModal';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import ProfileActivities from '../components/ProfileActivities';
 import ProfileNotifications from '../components/ProfileNotifications';
+import CommentsSection from '../components/CommentsSection';
+import {
+  setAppDomain, setInterestRate, setCurrency, setMinLoan, setMaxLoan, setNotificationsEnabled, setSupportEmail, setAppLogo, setMaintenanceMode, setDefaultLanguage, setAllowNewClients, setGraceDays, setLastBackup, setLastSync, setLastUpdateCheck
+} from '../store/slices/settingsSlice';
+import VerifyButton from '../components/Buttons/VerifyButton';
+import notifications_types from '../helper/notifications';
 
-// Iconos SVG como componentes
-const UserIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-  </svg>
-);
+import {
+  UserIcon,
+  EmailIcon,
+  PhoneIcon,
+  LocationIcon,
+  BankIcon,
+  SecurityIcon,
+  SettingsIcon,
+  CheckIcon,
+  EditIcon,
+  CloseIcon,
+} from '../components/icons';
 
-const EmailIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-  </svg>
-);
 
-const PhoneIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-  </svg>
-);
+interface InfoFieldProps {
+  icon: React.ReactNode;
+    label: string;
+    value: string;
+    isVerified?: boolean;
+    onVerify?: () => void;
+    isEditing?: boolean;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    name?: string;
+    type?: string;
+    placeholder?: string;
+    error?: string;
+    required?: boolean;
+    children?: React.ReactNode;
+  }
 
-const LocationIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
 
-const BankIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-  </svg>
-);
-
-const SecurityIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-  </svg>
-);
-
-const SettingsIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
 
 // Componente de badge verificado
 const VerifiedBadge = () => (
@@ -83,19 +57,6 @@ const VerifiedBadge = () => (
   </span>
 );
 
-// Componente de botón de verificación
-const VerifyButton = ({ onClick }: { onClick?: () => void }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors ml-2"
-  >
-    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-    </svg>
-    Verificar
-  </button>
-);
 
 // Componente de campo de información
 const InfoField = ({ 
@@ -112,21 +73,7 @@ const InfoField = ({
   error = "",
   required = false,
   children
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  isVerified?: boolean;
-  onVerify?: () => void;
-  isEditing?: boolean;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  name?: string;
-  type?: string;
-  placeholder?: string;
-  error?: string;
-  required?: boolean;
-  children?: React.ReactNode;
-}) => (
+}: InfoFieldProps) => (
   <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
     <div className="flex-shrink-0">
       <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
@@ -164,70 +111,24 @@ const InfoField = ({
   </div>
 );
 
-// Validaciones
+// Validaciones (ahora todos los campos son opcionales)
 const validations = {
-  name: (value: string) => {
-    if (!value.trim()) return 'El nombre es requerido';
-    if (value.length < 2) return 'El nombre debe tener al menos 2 caracteres';
-    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return 'El nombre solo puede contener letras';
-    return '';
-  },
-  lastname: (value: string) => {
-    if (!value.trim()) return 'El apellido es requerido';
-    if (value.length < 2) return 'El apellido debe tener al menos 2 caracteres';
-    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return 'El apellido solo puede contener letras';
-    return '';
-  },
+  name: (_value: string) => '',
+  lastname: (_value: string) => '',
   email: (value: string) => {
-    if (!value.trim()) return 'El email es requerido';
+    if (!value.trim()) return '';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) return 'El email no es válido';
     return '';
   },
-  phone: (value: string) => {
-    if (!value.trim()) return 'El teléfono es requerido';
-    const phoneRegex = /^\+?[0-9\s\-\(\)]+$/;
-    if (!phoneRegex.test(value)) return 'Ingresa un teléfono válido';
-    if (value.replace(/\D/g, '').length < 10) return 'El teléfono debe tener al menos 10 dígitos';
-    return '';
-  },
-  address: (value: string) => {
-    if (!value.trim()) return 'La dirección es requerida';
-    if (value.length < 10) return 'La dirección debe tener al menos 10 caracteres';
-    
-    // Validar que tenga al menos una calle y un número
-    const addressParts = value.trim().split(/\s+/);
-    if (addressParts.length < 2) {
-      return 'La dirección debe incluir nombre de calle y número';
-    }
-
-    // Buscar un número en la dirección (3-5 dígitos)
-    const numberPattern = /\b\d{3,5}\b/;
-    const hasNumber = numberPattern.test(value);
-
-    if (!hasNumber) {
-      return 'La dirección debe incluir un número de 3 a 5 dígitos';
-    }
-
-    return '';
-  },
-  cbu: (value: string) => {
-    if (!value.trim()) return '';
-    if (!/^\d{22}$/.test(value.replace(/\D/g, ''))) return 'El CBU debe tener exactamente 22 dígitos';
-    return '';
-  },
-  aliasCbu: (value: string) => {
-    if (!value.trim()) return '';
-    if (value.length < 3) return 'El alias debe tener al menos 3 caracteres';
-    if (!/^[a-zA-Z0-9]+$/.test(value)) return 'El alias solo puede contener letras y números';
-    return '';
-  }
+  phone: (_value: string) => '',
+  address: (_value: string) => '',
 };
 
 const ProfilePage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState<'info' | 'settings' | 'notifications' | 'activities'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'settings' | 'notifications' | 'activities' | 'advanced'>('info');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<Partial<Cliente>>({
@@ -265,6 +166,8 @@ const ProfilePage: React.FC = () => {
   // Simulación de verificación (reemplaza por tus flags reales)
   const emailVerified = false;
   const phoneVerified = false;
+
+  const settings = useSelector((state: RootState) => state.settings);
 
   useEffect(() => {
     if (user) {
@@ -375,14 +278,38 @@ const ProfilePage: React.FC = () => {
 
     try {
       const response = await apiService.updateProfile(profileDataToUpdate);
+      
       toast.success(response.mensaje || 'Perfil actualizado con éxito');
       if (response.cliente) {
         dispatch(updateUserProfileInSlice(response.cliente as Cliente));
-        socketService.emit('update_client_profile', response.cliente);
+        //socketService.emit('update_client_profile', response.cliente);
+
+        const data = notifications_types.update_profile
+
+        data.message = data.message.replace('{name}', response.cliente.nickname || '');
+        data.link = data.link.replace('{id}', response.cliente.sqlite_id);
+        
+        socketService.emit('new_notification', {
+          ...data,
+          from_client: response.cliente,
+          to_user:"every_user",
+          data: {
+            ...response.cliente,
+          }
+        });
+        const _response = await apiService.createClientActivity({
+          action: 'profile_update',
+          details: 'Actualizaste tu información personal',
+          data: {
+            ...response.cliente,
+          }
+        });
+        console.log(_response);
       }
       setIsEditing(false);
       setErrors({});
     } catch (err: any) {
+      console.log(err);
       toast.error(err.response?.data?.mensaje || 'Error al actualizar el perfil');
     } finally {
       setLoading(false);
@@ -465,6 +392,9 @@ const ProfilePage: React.FC = () => {
   const handlePaymentViewModeChange = (mode: 'table' | 'list') => {
     handleNotificationSettingChange('paymentViewMode', mode);
   };
+
+  // Detectar si el usuario tiene contraseña (user.hasPassword o user.password !== undefined)
+  const hasPassword = !!user?.hasPassword;
 
   if (!user && loading) {
     return <LoadingSpinner />;
@@ -553,6 +483,15 @@ const ProfilePage: React.FC = () => {
                   <span className="ml-2">Configuraciones</span>
                 </div>
               </button>
+             {/*  <button
+                onClick={() => setActiveTab('advanced')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'advanced' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              >
+                <div className="flex items-center">
+                  <SettingsIcon />
+                  <span className="ml-2">Configuración Avanzada</span>
+                </div>
+              </button> */}
             </nav>
           </div>
 
@@ -782,67 +721,74 @@ const ProfilePage: React.FC = () => {
                   </div>
 
                   {showChangePassword && (
-                    <form onSubmit={handlePasswordSubmit} className="mt-6 space-y-4">
-                      <div>
-                        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
-                          Contraseña Actual
-                        </label>
-                        <input
-                          type="password"
-                          id="currentPassword"
-                          name="currentPassword"
-                          value={passwordData.currentPassword}
-                          onChange={handlePasswordChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                          Nueva Contraseña
-                        </label>
-                        <input
-                          type="password"
-                          id="newPassword"
-                          name="newPassword"
-                          value={passwordData.newPassword}
-                          onChange={handlePasswordChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                          Confirmar Nueva Contraseña
-                        </label>
-                        <input
-                          type="password"
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          value={passwordData.confirmPassword}
-                          onChange={handlePasswordChange}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                          required
-                        />
-                      </div>
-                      <div className="flex justify-end space-x-4">
-                        <button
-                          type="button"
-                          onClick={() => setShowChangePassword(false)}
-                          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                        >
-                          {loading ? <LoadingSpinner /> : <CheckIcon />}
-                          <span className="ml-2">{loading ? 'Actualizando...' : 'Actualizar Contraseña'}</span>
-                        </button>
-                      </div>
-                    </form>
+                    <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <SecurityIcon />
+                        <span className="ml-2">{hasPassword ? 'Cambiar Contraseña' : 'Establecer Contraseña'}</span>
+                      </h3>
+                      <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                        {hasPassword ? (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña Actual</label>
+                              <input
+                                type="password"
+                                name="currentPassword"
+                                value={passwordData.currentPassword}
+                                onChange={handlePasswordChange}
+                                className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300"
+                                autoComplete="current-password"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
+                              <input
+                                type="password"
+                                name="newPassword"
+                                value={passwordData.newPassword}
+                                onChange={handlePasswordChange}
+                                minLength={6}
+                                className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300"
+                                autoComplete="new-password"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Nueva Contraseña</label>
+                              <input
+                                type="password"
+                                name="confirmPassword"
+                                value={passwordData.confirmPassword}
+                                onChange={handlePasswordChange}
+                                minLength={6}
+                                className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300"
+                                autoComplete="new-password"
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Establecer Contraseña</label>
+                            <input
+                              type="password"
+                              name="newPassword"
+                              value={passwordData.newPassword}
+                              onChange={handlePasswordChange}
+                              minLength={6}
+                              className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300"
+                              autoComplete="new-password"
+                            />
+                          </div>
+                        )}
+                        <div className="flex justify-end">
+                          <button
+                            type="submit"
+                            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none"
+                          >
+                            {hasPassword ? 'Cambiar Contraseña' : 'Establecer Contraseña'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
                   )}
                 </div>
 
@@ -1041,6 +987,84 @@ const ProfilePage: React.FC = () => {
 
             {activeTab === 'activities' && (
               <ProfileActivities />
+            )}
+
+            {activeTab === 'advanced' && (
+              <div className="space-y-6 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Configuración Global de la App</h2>
+                {/* Dominio y tasa de interés */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Dominio de la App</label>
+                    <input type="text" className="w-full border rounded px-3 py-2" value={settings.appDomain} onChange={e => dispatch(setAppDomain(e.target.value))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tasa de Interés (%)</label>
+                    <input type="number" className="w-full border rounded px-3 py-2" value={settings.interestRate} onChange={e => dispatch(setInterestRate(Number(e.target.value)))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+                    <input type="text" className="w-full border rounded px-3 py-2" value={settings.currency} onChange={e => dispatch(setCurrency(e.target.value))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Préstamo Mínimo</label>
+                    <input type="number" className="w-full border rounded px-3 py-2" value={settings.minLoan} onChange={e => dispatch(setMinLoan(Number(e.target.value)))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Préstamo Máximo</label>
+                    <input type="number" className="w-full border rounded px-3 py-2" value={settings.maxLoan} onChange={e => dispatch(setMaxLoan(Number(e.target.value)))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email de Soporte</label>
+                    <input type="email" className="w-full border rounded px-3 py-2" value={settings.supportEmail} onChange={e => dispatch(setSupportEmail(e.target.value))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Idioma Predeterminado</label>
+                    <input type="text" className="w-full border rounded px-3 py-2" value={settings.defaultLanguage} onChange={e => dispatch(setDefaultLanguage(e.target.value))} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input type="checkbox" checked={settings.notificationsEnabled} onChange={e => dispatch(setNotificationsEnabled(e.target.checked))} />
+                    <span className="text-sm">Notificaciones Globales</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input type="checkbox" checked={settings.maintenanceMode} onChange={e => dispatch(setMaintenanceMode(e.target.checked))} />
+                    <span className="text-sm">Modo Mantenimiento</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input type="checkbox" checked={settings.allowNewClients} onChange={e => dispatch(setAllowNewClients(e.target.checked))} />
+                    <span className="text-sm">Permitir nuevos clientes</span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Días de Gracia</label>
+                    <input type="number" className="w-full border rounded px-3 py-2" value={settings.graceDays} onChange={e => dispatch(setGraceDays(Number(e.target.value)))} />
+                  </div>
+                </div>
+                {/* Acciones de base de datos */}
+                <div className="mt-8 space-y-4">
+                  <h3 className="text-lg font-semibold">Base de Datos</h3>
+                  <div className="flex flex-wrap gap-4">
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Importar Base de Datos</button>
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Exportar Base de Datos</button>
+                    <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Backup</button>
+                    <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Sincronizar</button>
+                    <button className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Buscar Actualizaciones</button>
+                  </div>
+                </div>
+                {/* Logo de la app */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold">Logo de la App</h3>
+                  <input type="file" className="mt-2" onChange={e => {
+                    if (e.target.files && e.target.files[0]) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => dispatch(setAppLogo(ev.target?.result as string));
+                      reader.readAsDataURL(e.target.files[0]);
+                    }
+                  }} />
+                  {settings.appLogo && <img src={settings.appLogo} alt="Logo" className="h-16 mt-2" />}
+                </div>
+                {/* Sección de comentarios */}
+                <CommentsSection />
+              </div>
             )}
           </div>
         </div>

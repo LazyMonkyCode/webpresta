@@ -2,10 +2,10 @@ import Pago from '../models/pago.js';
 import Prestamo from '../models/prestamo.js';
 import Cliente from '../models/cliente.js';
 import Activity from '../models/activity.js';
-import { sendNotificationToUser, sendNotificationToAll } from '../socketHandler.js'; // Importar función de notificación
+//import { sendNotificationToUser, sendNotificationToAll } from '../socketHandler.js'; // Importar función de notificación
 import { v4 as uuidv4 } from 'uuid'; // Para generar IDs para las notificaciones
 import cloudinary from '../config/cloudinaryConfig.js'; // Importar Cloudinary
-
+import Notification from '../models/notification.js';
 // Obtener pago por ID
 export const getPagoById = async (req, res) => {
   try {
@@ -545,10 +545,10 @@ export const getAdminDailyPayments = async (req, res) => {
     })
     .populate({
       path: 'loan_id',
-      select: 'label client_id',
+      select: 'label client_id _id',
       populate: {
         path: 'client_id',
-        select: 'nickname name lastname'
+        select: 'nickname name lastname _id'
       }
     })
     .sort({ payment_date: 1 })
@@ -561,8 +561,11 @@ export const getAdminDailyPayments = async (req, res) => {
         _id: pago._id,
         cliente: cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente no encontrado',
         prestamoLabel: pago.loan_id?.label || 'Préstamo no encontrado',
+        paymentLabel: pago.label || 'Pago no encontrado',
         amount: pago.amount,
         status: pago.status,
+        prestamo_id: pago.loan_id?._id,
+        client_id: pago.loan_id?.client_id?._id,
         payment_date: pago.payment_date,
         installment_number: pago.installment_number,
         payment_method: pago.payment_method,
@@ -661,7 +664,7 @@ export const updateAdminPayment = async (req, res) => {
     // Crear registro de actividad
     const activity = new Activity({
       admin_id: adminUser._id,
-      admin_name: adminUser.username ? adminUser.username : adminUser.name + ' ' + adminUser.lastname,
+      admin_name: adminUser.username ? adminUser.username : adminUser.nickname,
       admin_role: adminUser.role || "admin",
       action: action,
       payment_id: pago._id,
@@ -679,89 +682,10 @@ export const updateAdminPayment = async (req, res) => {
 
     await activity.save();
 
-    // Preparar datos para notificación
-    const notificationData = {
+   
       
-      type: 'admin_activity',
-      title: 'Actividad de Cobranza',
-      message: `${adminUser.name} ${adminUser.lastname} (${adminUser.role === 'admin' ? 'Administrador' : 'Cobrador'}) ${status === 'paid' ? 'marcó como pagado' : status === 'incomplete' ? 'marcó como incompleto' : 'marcó como pendiente'} el pago de ${pago.amount} del cliente ${cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente'} para el préstamo "${prestamo?.label}"`,
-      timestamp: new Date().toISOString(),
-      read: false,
-      data: {
-        admin_id: adminUser._id,
-        admin_name: adminUser.username ? adminUser.username : adminUser.name + ' ' + adminUser.lastname,
-        admin_role: adminUser.role,
-        action: action,
-        payment_id: pago._id,
-        payment_sqlite_id: pago.sqlite_id || 0,
-        client_sqlite_id: cliente?.sqlite_id || 0,
-        client_name: cliente ? (cliente.nickname || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente no encontrado',
-        loan_label: prestamo?.label || 'Préstamo no encontrado',
-        payment_amount: pago.amount,
-        previous_status: previousStatus,
-        new_status: status,
-        payment_method: payment_method || pago.payment_method,
-        incomplete_amount: incomplete_amount
-      }
-    };
-
-    const notification = new Notification({
-      type: 'admin_activity',
-      title: 'Actividad de Cobranza',
-      message: `${adminUser.username ? adminUser.username : adminUser.name + ' ' + adminUser.lastname} 
-      
-      (${adminUser.role === 'admin' ? 'Administrador' : 'Cobrador'}) 
-      ${status === 'paid' ? 
-        'marcó como pagado' : status === 'incomplete' ? 
-        'marcó como incompleto' : 'marcó como pendiente'} 
-        el pago de ${pago.amount} del cliente 
-        ${cliente ? (cliente.nickname 
-          || `${cliente.name} ${cliente.lastname}`.trim()) : 'Cliente'}
-           para el préstamo "${prestamo?.label}"`,
-      timestamp: new Date().toISOString(),
-      read: false,
-    });
-
-    // Enviar notificación a todos los usuarios conectados
-    sendNotificationToAll(notificationData);
-
-    // Enviar notificación específica al cliente para cualquier cambio de estado
-    if (cliente) {
-      let clientNotificationTitle = '';
-      let clientNotificationMessage = '';
-      
-      if (status === 'paid') {
-        clientNotificationTitle = 'Pago Confirmado';
-        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido confirmado por ${adminUser.name} ${adminUser.lastname}.`;
-      } else if (status === 'incomplete') {
-        clientNotificationTitle = 'Pago Incompleto';
-        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido marcado como incompleto. Monto pagado: ${incomplete_amount}. Método: ${payment_method || 'No especificado'}.`;
-      } else if (status === 'pending') {
-        clientNotificationTitle = 'Pago Pendiente';
-        clientNotificationMessage = `Tu pago de ${pago.amount} para el préstamo "${prestamo?.label}" ha sido marcado como pendiente por ${adminUser.name} ${adminUser.lastname}.`;
-      }
-      
-      const clientNotificationData = {
-        
-        type: status === 'paid' ? 'success' : status === 'incomplete' ? 'warning' : 'info',
-        title: clientNotificationTitle,
-        message: clientNotificationMessage,
-        timestamp: new Date().toISOString(),
-        read: false,
-        link: `/loans/${prestamo?._id}`,
-        data: {
-          payment_id: pago._id,
-          payment_amount: pago.amount,
-          loan_label: prestamo?.label,
-          status: status,
-          admin_name: adminUser.name + ' ' + adminUser.lastname,
-          incomplete_amount: incomplete_amount,
-          payment_method: payment_method
-        }
-      };
-      
-      sendNotificationToUser(cliente._id.toString(), clientNotificationData);
-    }
+      //sendNotificationToUser(cliente._id.toString(), clientNotificationData);
+    
 
     res.json({
       mensaje: 'Pago actualizado exitosamente',

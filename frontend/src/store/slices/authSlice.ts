@@ -20,6 +20,7 @@ export interface Cliente {
   phoneVerified?: boolean;
   role?: string;
   username?: string;
+  hasPassword?: boolean;
 }
 export interface User {
   id: string;

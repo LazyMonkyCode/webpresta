@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+/* import jwt from 'jsonwebtoken';
 import Cliente from './models/cliente.js'; // Use Cliente model for authentication
 import User from './models/user.js';
 import { io as mainIo } from './index.js'; // Importar la instancia \`io\` principal
@@ -149,7 +149,8 @@ export default function initializeSocket(io) {
             room:null,
             type:"profile_updated",
             sender_client_id:data._id,
-            link:"/clients/"+data.sqlite_id
+            link:"/clients/"+data.sqlite_id,
+            data:data
           })
           await notification.save()
 
@@ -348,7 +349,13 @@ export function sendNotificationToAll(notificationData) {
 }
 
 
+export function getConnectedUsers(){
+  return connectedUsers;
+}
+export function getConnectedClientes(){
+  return connectedClientes;
+}
 //const uri = ;
 
 //pepelepu23
-//
+// */
