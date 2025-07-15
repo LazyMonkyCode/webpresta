@@ -18,6 +18,7 @@ interface PrestamoConTotales extends Prestamo {
   purpose?: string;
   proposito?: string;
   sqlite_id?: number;
+ 
   
 }
 
@@ -177,7 +178,7 @@ const LoansPage: React.FC = () => {
       setDeletePendingLoan(null);
       toast.success('Préstamo pendiente eliminado correctamente');
       
-      socketService.emit('new_notification', {
+      /* socketService.emit('new_notification', {
         message: notifications_types.pending_loan_deleted.message.replace('{name}', deletePendingLoan.cliente?.nickname || ''),
         link: notifications_types.pending_loan_deleted.link.replace('{id}', deletePendingLoan.sqlite_id?.toString() || ''),
         type: notifications_types.pending_loan_deleted.type,
@@ -187,7 +188,7 @@ const LoansPage: React.FC = () => {
           cliente: deletePendingLoan.cliente
         }  
       });
-
+ */
       // Crear actividad del cliente
       apiService.createClientActivity({
         action: 'pending_loan_deleted',
@@ -546,7 +547,8 @@ const LoansPage: React.FC = () => {
                         type="button"
                         className="block w-full text-center py-2 px-4 rounded-lg font-semibold transition-all duration-200 bg-red-100 text-red-700 cursor-pointer border border-red-300 hover:bg-red-200"
                         onClick={() => {
-                          setCliente(prestamo.cliente)
+                          /* (prestamo.cliente|| */
+                          setCliente(null)
                           setDeletePendingLoan(prestamo)
                         }}
                       >

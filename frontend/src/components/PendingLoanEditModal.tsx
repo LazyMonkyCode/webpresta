@@ -4,7 +4,7 @@ export interface PendingLoanEditData {
   amount: number;
   disbursementDate: string;
   purpose?: string;
-  nickname:string;
+  nickname?:string;
 }
 
 interface PendingLoanEditModalProps {

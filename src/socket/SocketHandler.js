@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 
 import UsersSocket from "./Users.js";
 import ClientsSocket from "./Clients.js";
-import NotificationsHandler from "./NotificationsHandler.js";
+import NotificationsHandler from "./Notificationshandler.js";
 
 
 //import app from "../index.js";

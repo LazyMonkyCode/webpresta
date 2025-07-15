@@ -26,16 +26,14 @@ const __dirname = path.dirname(__filename)
 
 // Configuración de variables de entorno
 const PORT = process.env.PORT || 4000
-/* const uri = "mongodb+srv://wtf2233:wwfXaR1e1cOsBWZv@cluster0.2yipgj7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; */
-const MONGODB_URI = process.env.MONGODB_URI_LOCAL || uri
-
+const MONGODB_URI = process.env.MONGODB_URI
  
 // Inicializar la aplicación Express
 const app = express()
 
 const server = http.createServer(app)
 export const io = new Server(server, {
-  cors: {
+ /*  cors: {
     origin: function (origin, callback) {
       const allowedOrigins = [process.env.CLIENT_URL || "http://localhost:3000","http://localhost:3001", "http://localhost:3005", "http://localhost:3006"]
       
@@ -46,7 +44,7 @@ export const io = new Server(server, {
       }
     }, 
     methods: ["GET", "POST"]
-  }
+  } */
 }) 
 
 
@@ -67,7 +65,7 @@ app.use(morgan('dev')) // Logging
   next()
 })
 
-  const allowedOrigins = [
+/*   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3005',
@@ -84,7 +82,7 @@ app.use(morgan('dev')) // Logging
       }
     },
     credentials: true // solo si usás cookies/autenticación
-  }));
+  })); */
 // Rutas de API
 app.use('/api/auth', authRoutes)
 app.use('/api/clientes', clienteRoutes)
