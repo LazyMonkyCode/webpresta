@@ -7,6 +7,9 @@ module.exports = {
       screens: {
         '2xsm': '400px', // O el tamaño que quieras
       },
+      maxHeight:{
+        'screen-80':'80vh'
+      },
       height: {
         'screen-70': '70vh',
         'screen-80': '80vh',

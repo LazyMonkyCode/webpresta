@@ -24,6 +24,34 @@ class LoansService {
   }
 
 
+  async  getActiveLoans() {
+    try {
+      const query = {}
+
+      const result =await window.electron.database.select("loans", {
+        select:`COUNT(CASE WHEN status='active' THEN id END ) AS active_loans`,
+
+      },[],{one: true})
+
+
+      console.log(result," active loans")
+     /*  const clientInformation =await window.electron.database.select("information", {
+        where: `client_id = ?`,
+
+      },[id],{one: true})
+      console.log("information", clientInformation) */
+
+      /* console.log("client", client) */
+
+      return result
+    } catch (error) {
+      console.log("Error al obtener el cliente por ID:", error);
+      return null;
+    }
+  }
+
+  
+
   filters(filter) {
 
 
@@ -50,6 +78,36 @@ class LoansService {
 
     return filterString
   }
+
+  async deleteById(id) {
+    try {
+      const query = {}
+
+      const client =await window.electron.database.select("clients", {
+        where: `id = ?`,
+        
+
+      },[id],{one: true})
+
+      const clientInformation =await window.electron.database.select("information", {
+        where: `client_id = ?`,
+
+      },[id],{one: true})
+      console.log("information", clientInformation)
+
+      console.log("client", client)
+
+      return {
+        ...client,
+        ...clientInformation
+      }
+    } catch (error) {
+      console.log("Error al obtener el cliente por ID:", error);
+      return null;
+    }
+  }
+
+
 
 
   async getClientById(id) {

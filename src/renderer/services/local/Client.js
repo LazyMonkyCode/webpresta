@@ -41,6 +41,33 @@ class Client {
 
 
 
+      async delete() {
+    try {
+      
+
+      const result =await window.electron.database.delete("clients", {
+        where: `id = ?`,
+        
+      },[this.id])
+
+
+      console.log(result)
+
+      /* const clientInformation =await window.electron.database.select("information", {
+        where: `client_id = ?`,
+
+      },[id],{one: true})
+      console.log("information", clientInformation)
+
+      console.log("client", client) */
+
+      return true
+
+    } catch (error) {
+      console.log("Error al obtener el cliente por ID:", error);
+      return null;
+    }
+  }
 
     async exists() {
         try {
@@ -51,10 +78,10 @@ class Client {
                 [this.nickname],
                 { one: true }// Pass the email as a parameter
             );
-            console.log('cliente nickmae existence check result:', result);
+            //console.log('cliente nickmae existence check result:', result);
             return result ? true : false // Returns true if email exists, false otherwise
         } catch (error) {
-            console.error('Error checking email existence:', error);
+            //console.error('Error checking email existence:', error);
             return false; // Return false in case of error
         }
 
@@ -74,11 +101,11 @@ class Client {
                 [query.username ? query.username : query.email],
                 { one: true }// Pass the email as a parameter
             );
-            console.log('Username existence check result:', result);
+            //console.log('Username existence check result:', result);
             this.id = result.id
             return result // Returns true if email exists, false otherwise
         } catch (error) {
-            console.error('Error checking email existence:', error);
+            //console.error('Error checking email existence:', error);
             return false; // Return false in case of error
         }
 
@@ -100,7 +127,7 @@ class Client {
 
             const access_code = Math.floor(Math.random() * 90000) + 10000;
 
-            console.log("access_code", access_code)
+            //console.log("access_code", access_code)
             
             const result = await window.electron.database.select('clients', {
                 where: `access_code = ?`,
@@ -109,7 +136,7 @@ class Client {
                 { one: true }// Pass the email as a parameter
             );
 
-            console.log('Access code existence check result:', result);
+            //console.log('Access code existence check result:', result);
 
             if (!result) {
 
@@ -129,21 +156,21 @@ class Client {
             // Check if username and email are provided
             // If not, log an error and return
          /*    if (!this.username || !this.email) {
-                console.error('Username and email are required to insert a user.');
+                //console.error('Username and email are required to insert a user.');
                 return;
             }
  */
             const access_code =await this.generateAccessCode()
 
             //TODO: save user in the database
-            console.log("access_code", access_code,this.nickname) 
+            //console.log("access_code", access_code,this.nickname) 
 
 
 
          const result = await window.electron.database.insert('clients', ['nickname', 'access_code',"user_id"], [
                 this.nickname, access_code,this.user_id])
 
-                console.log('Client inserted successfully:', result);
+                //console.log('Client inserted successfully:', result);
          this.id = result.lastInsertRowid  
 
          const clientInfo = this.getClientOb()
@@ -156,15 +183,15 @@ class Client {
             delete clientInfo.user_id
             clientInfo.client_id = this.id // Add the client_id to the information object
             //TODO: save  the user information
-           console.log( "information data", await window.electron.database.insert('information', Object.keys(clientInfo), Object.values(clientInfo)))
+           ////console.log( "information data", await window.electron.database.insert('information', Object.keys(clientInfo), Object.values(clientInfo)))
 
 
-            console.log('Clientinserted successfully:', result);
+            ////console.log('Clientinserted successfully:', result);
 
            // this.id = result.lastInsertRowid;  // Assuming the database returns the last inserted ID */
 
         } catch (error) {
-            console.error('Error inserting client:', error);
+            //console.error('Error inserting client:', error);
             return;
 
         }
@@ -207,7 +234,7 @@ class Client {
 
             return token; // Return the generated token
         } catch (error) {
-            console.error('Error generating auth token:', error);
+            //console.error('Error generating auth token:', error);
         }
 
     }

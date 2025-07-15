@@ -1,8 +1,3 @@
-
-
-
-
-
 import React,{useState,useEffect} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setFilter } from '../../redux/slices/pagination';
@@ -20,6 +15,9 @@ import {
 import Checkbox from '../../form/input/Checkbox';
 import Radio from '../../form/input/Radio';
 import Pagination from '../Pagination';
+import { FaSackDollar, FaTrash } from 'react-icons/fa6';
+import { FaCreditCard, FaEdit, FaTrashAlt } from 'react-icons/fa';
+import { openModal } from '../../redux/slices/modalSlice';
 
 const cuotaEstados = ['pagadas', 'expiradas', 'pendientes', 'incompletas'];
 const estadoPrestamos =[
@@ -39,7 +37,11 @@ const PaymentsFilter = () => {
   const [filtrosActivos, setFiltrosActivos] = useState({});
   const [estadoPrestamoSeleccionadas, setEstadoPrestamoSeleccionadas] = useState([]);
   const dispatch = useDispatch();
+  const selectedItems = useSelector(state=>state.selection)
+
   const { filter } = useSelector((state) => state.pagination);
+    const loans = useSelector((state) => state.loans);
+
   useEffect(() => {
     // Inicializar filtros activos con valores por defecto
     dispatch(setFilter({
@@ -48,7 +50,6 @@ const PaymentsFilter = () => {
       loans: [],
       loansLen: ''
     }));
-
 
   }, []);
   const estadoIcons = {
@@ -163,14 +164,65 @@ const cantidadPrestamosValues =["sin prestamos activos",1,3,5]
       {/* Input + botón de filtros */}
       <div className="flex gap-2 items-center  justify-between">
         
+      <div className='flex gap-3'>
         <button
           onClick={() => setFiltrosVisibles((prev) => !prev)}
-          className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+          className="flex items-center gap-1 px-2 py-1 border border-gray-300 rounded-md hover:bg-gray-100"
         >
-          <Filter className="w-4 h-4" />
-          <span>Filtros</span>
-          <ChevronDown className="w-4 h-4" />
+          <Filter className="w-3 h-3" />
+          <span>filtros</span>
+          <ChevronDown className="w-3 h-3" />
         </button>
+        {
+          loans.selectedLoan && (
+            <div className='flex gap-2 justify-center items-center rounded-full   text-gray-500 px-2 py-1'>
+             <span className='p-2 rounded-full bg-green-500 text-white'>  <FaSackDollar></FaSackDollar></span>
+            <button 
+            onClick={()=>{
+              dispatch(openModal(
+                "LOAN_DELETE"
+                ))
+            }}
+            className='hover:text-red-500  rounded-md'>
+              <FaTrashAlt></FaTrashAlt>
+            </button>
+            <button
+            onClick={()=>{
+              dispatch(openModal("LOAN_EDIT"))
+            }}
+            className='hover:text-yellow-500  rounded-md'>
+              <FaEdit size={20}></FaEdit>
+            </button>
+        </div>
+          )
+        }
+
+
+        {
+          selectedItems.items.length ? (
+            <div className='flex gap-2 justify-center items-center rounded-full  text-gray-500 px-2 py-1 '>
+             <span className='p-2 rounded-full bg-blue-500 text-white'> <FaCreditCard></FaCreditCard></span>
+            <button 
+            onClick={()=>{
+              dispatch(openModal(
+                "PAYMENT_DELETE"
+                ))
+            }}
+            className='hover:text-red-500  rounded-md transition-all'>
+              <FaTrashAlt />
+            </button>
+            <button
+            onClick={()=>{
+              dispatch(openModal("PAYMENT_EDIT"))
+            }}
+            className='hover:text-yellow-500   rounded-md'>
+              <FaEdit size={20}></FaEdit>
+            </button>
+        </div>
+          ): (<></>)
+        }
+        
+      </div>
 
         <Pagination size={"sm"}></Pagination>
       </div>

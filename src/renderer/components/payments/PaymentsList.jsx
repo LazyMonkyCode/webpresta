@@ -4,6 +4,7 @@ import Badge from "../ui/badge/Badge";
 import PaymentCard from "./PayentsCard";
 import PaymentListItem from "./PaymentListItem";
 import Pagination from '../Pagination';
+import { resetPaginationData } from "../../redux/slices/pagination";
 import {
     Filter,
     X,
@@ -14,11 +15,13 @@ import {
     AlertCircle
 } from 'lucide-react';
 import PaymentsFilter from "./PaymentsFilter";
+import { useSelector } from "react-redux";
 
 const PaymentsList = ({ client, handleEdit }) => {
 
-
-    useEffect(() => {
+    const {payments} = useSelector(state=>state.payments)
+    
+   /*  useEffect(() => {
 
         const fetchPayments = async (params) => {
 
@@ -30,10 +33,10 @@ const PaymentsList = ({ client, handleEdit }) => {
         }
 
 
-    }, [])
+    }, []) */
 
 
-    const [payments, setPayments] = useState([
+   /*  const [payments, setPayments] = useState([
         {
             id: 1,
             amount: 12323
@@ -46,7 +49,7 @@ const PaymentsList = ({ client, handleEdit }) => {
             id: 3,
             amount: 12323
         }
-    ])
+    ]) */
 
     return (
 
@@ -60,7 +63,7 @@ const PaymentsList = ({ client, handleEdit }) => {
             <div className="w-full ">
 
                 {
-                    payments.map((payment) => (<PaymentListItem payment={payment} key={payment.id}></PaymentListItem>))
+                    payments.map((payment) => (<PaymentListItem payment={payment} key={(payment.id)+Math.random()*100}></PaymentListItem>))
                 }
             </div>
 

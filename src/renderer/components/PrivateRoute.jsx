@@ -12,9 +12,11 @@ const PrivateRoute = ({ children }) => {
 
     useEffect(() => {
         console.log("PrivateRoute: token", token, "user", user);
+        
         const checkSessionExpired = async () => {
             if (!token) return;
             const result = await window.electron.token.verify(token);
+            console.log(result)
             if (!result || !result.user) {
                 dispatch(setIsSessionExpired(true));
                 navigate('/auth/expired');

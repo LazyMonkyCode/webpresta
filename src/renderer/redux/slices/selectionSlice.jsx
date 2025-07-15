@@ -6,7 +6,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     
-    selectedItems:[]
+    items:[]
 }
 
 
@@ -16,11 +16,11 @@ const selectionSlice = createSlice({
     reducers: {
         addItem:(state,action)=>{
 
-            state.selectedItems.push(action.payload)
+            state.items.push(action.payload)
         },
         removeItem:(state,action)=>{
 
-            state.selectedItems.filter((item)=>action.payload.cb(item))
+            state.items = state.items.filter((item)=>action.payload!=item.id)
         }
 
     },

@@ -47,9 +47,9 @@ const Step4 = ({ step }) => {
 
       setTimeout(() => {
 
-        const insertClients = clients.slice(0, clients.length-1)
+       // const insertClients = clients.slice(0, clients.length-1)
       
-        dispatch(setClients([client.getClientOb(),...insertClients]))
+        dispatch(setClients([client.getClientOb(),...clients]))
         setIsLoading(false)
         toast.success("Cliente agregado correctamente")
         dispatch(closeModal())

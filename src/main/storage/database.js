@@ -9,7 +9,6 @@ const { isArray } = require('util');
  
 class Database {
 
- 
   constructor(dbname) {
     this.db = null;
     this.dbname = dbname ? dbname + '.db' : 'test.db';
@@ -89,7 +88,7 @@ class Database {
           })
     
     
-    
+          console.log(parseValues)
     const result = this.db.prepare(this.query).run(parseValues);
 
     console.log('Datos insertados:', result);
@@ -151,8 +150,8 @@ class Database {
     ${query.orderBy ? `ORDER BY ${query.orderBy}` : ''} 
      ${query.limit ? `LIMIT ${query.limit}` : ''}
       ${query.offset ? `OFFSET ${query.offset}` : ''}
-     ;`;
-    console.log(sql);
+     `;
+    console.log(sql.trimEnd());
     console.log(data);
     console.log(options);
 
@@ -182,13 +181,24 @@ class Database {
           })
     
     console.log(this.query);
+
+      console.log(values)
+    console.log(parseValues)
     const result = this.db.prepare(this.query).run(parseValues);
+
+  console.log(result)
 
     return result
   }
 
-  delete(table, columns, values) {
-    this.db.prepare(`DELETE FROM ${table} WHERE ${columns.join(', ')} = ${values.join(', ')}`).run();
+  delete(table, query, values) {
+    const sql = `DELETE FROM ${table} WHERE ${query.where}`;
+    console.log(sql)
+        console.log(values)
+
+   const result =  this.db.prepare(sql).run(values);
+
+    console.log(result)
   }
 
   close() {

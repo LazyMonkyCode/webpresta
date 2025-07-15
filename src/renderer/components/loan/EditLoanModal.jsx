@@ -1,5 +1,4 @@
 
-
 import React,{useEffect} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { closeModal,changeName } from '../../redux/slices/modalSlice';
@@ -10,8 +9,8 @@ import Button from '../ui/button/Button';
 import { changeValue, setErrors, setInputs } from '../../redux/slices/formSlice';
 import useValidation from '../../hooks/useValidator';
 
+const EditLoanModal = ({ loan, onClose, onSave }) => {
 
-const EditModalClient = ({  onClose, onSave }) => {
 
     const {inputs} = useSelector(state=>state.form)
     const {client} = useSelector(state=>state.clients)
@@ -35,17 +34,17 @@ const EditModalClient = ({  onClose, onSave }) => {
      }, [])
   
 
-    return (<Modal name={"CLIENT_EDIT"} className="max-w-[700px] m-4">
+    return (<Modal name={"LOAN_EDIT"} className="max-w-[700px] m-4">
         <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Personal Information
+              Editar Prestamo
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
               Update your details to keep your profile up-to-date.
             </p>
           </div>
-           <form className="flex flex-col">
+          <form className="flex flex-col">
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
              {/*  <div>
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -109,7 +108,7 @@ const EditModalClient = ({  onClose, onSave }) => {
                     onChange={(e)=>dispatch(changeValue({key:"lastname",value:e.target.value}))}
                     />
                     {
-                      errors.lastname && (
+                      errors.name && (
                         <span className='text-red-500'>
                           {errors.lastname}
                         </span>
@@ -125,7 +124,7 @@ const EditModalClient = ({  onClose, onSave }) => {
                     onChange={(e)=>dispatch(changeValue({key:"email",value:e.target.value}))}
                     type="text"  />
                     {
-                      errors.email && (
+                      errors.name && (
                         <span className='text-red-500'>
                           {errors.email}
                         </span>
@@ -139,34 +138,6 @@ const EditModalClient = ({  onClose, onSave }) => {
                     value={inputs.phone || ''}
                     onChange={(e)=>dispatch(changeValue({key:"phone",value:e.target.value}))} />
                     {
-                      errors.phone && (
-                        <span className='text-red-500'>
-                          {errors.phone}
-                        </span>
-                      )
-                    }
-                  </div>
-                  
-                     <div className="col-span-1 lg:col-span-1">
-                    <Label>Direccion</Label>
-                    <Input type="text" 
-                    value={inputs.address || ''}
-                    onChange={(e)=>dispatch(changeValue({key:"address",value:e.target.value}))} />
-                    {
-                      errors.address && (
-                        <span className='text-red-500'>
-                          {errors.address}
-                        </span>
-                      )
-                    }
-                  </div>
-
-                  {/*  <div className="col-span-2 lg:col-span-1">
-                    <Label>Telefono</Label>
-                    <Input type="text" 
-                    value={inputs.phone || ''}
-                    onChange={(e)=>dispatch(changeValue({key:"phone",value:e.target.value}))} />
-                    {
                       errors.name && (
                         <span className='text-red-500'>
                           {errors.phone}
@@ -174,8 +145,6 @@ const EditModalClient = ({  onClose, onSave }) => {
                       )
                     }
                   </div>
- */}
-               
 
                   {/* <div className="col-span-2">
                     <Label>Bio</Label>
@@ -206,4 +175,4 @@ const EditModalClient = ({  onClose, onSave }) => {
 
 
 
-export default EditModalClient;
+export default EditLoanModal;

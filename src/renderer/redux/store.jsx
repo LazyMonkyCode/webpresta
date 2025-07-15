@@ -10,6 +10,7 @@ import clientsReducer from './slices/clientsSlice'; // Import the clientsSlice
 import loansReducer from './slices/loansSlice'
 import paymentsReducer from './slices/paymentsSlice'
 import selectionReducer from './slices/selectionSlice'
+
 const store = configureStore({
     reducer: {
         auth: authReducer,

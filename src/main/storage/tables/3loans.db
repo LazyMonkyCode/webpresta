@@ -13,6 +13,8 @@ create table if not exists loans (
     type text not null,
     term integer not null,
     interest_rate real not null,
+    installments int not null,
+    paid_installments int DEFAULT 0,
     disbursement_date date not null,
     user_id integer not null,
     created_at datetime default current_timestamp,

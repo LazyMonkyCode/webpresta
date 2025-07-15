@@ -8,10 +8,12 @@ db.connect();
 
 db.deleteTable('loans')
 db.deleteTable('payments')
+db.deleteTable('clients')
+db.deleteTable('information')
 db.init();
 
  
-  
+    
 
 try {
 
@@ -30,7 +32,7 @@ function databaseIpc(event,action,table,query,data,options) {
 
       const winWebContents = event.sender; // 👈 Este NUNCA es null si vino del renderer
 
-
+    
     try {
         switch (action) {
             case 'createTable':
@@ -64,6 +66,9 @@ function databaseIpc(event,action,table,query,data,options) {
        winWebContents.send('messages', 'success', 'Database operation successful');
     } catch (error) {
         winWebContents.send('messages', 'error', error.message);
+        return {
+            error:error.message
+        }
     }
    
 

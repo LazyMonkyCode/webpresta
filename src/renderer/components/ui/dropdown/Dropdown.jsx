@@ -13,6 +13,7 @@ export const Dropdown = ({
   onClose,
   children, 
   className = "",
+  position=''
 }) => {
   const dropdownRef = useRef(null);
 
@@ -38,7 +39,9 @@ export const Dropdown = ({
   return (
     <div
       ref={dropdownRef}
-      className={`absolute z-10  right-0 mt-2  rounded-xl border border-gray-200 bg-white  shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark ${className}`}
+      className={`absolute z-10  ${
+        position && position == "bot-right" ? "bottom-5 left-5": "right-0 top-6 "
+      } mt-2  rounded-xl border border-gray-200 bg-white  shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark ${className}`}
     >
       {children}
     </div>

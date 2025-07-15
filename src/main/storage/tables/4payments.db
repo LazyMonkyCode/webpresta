@@ -13,6 +13,7 @@ create table if not exists payments (
     late_days integer not null,
     payment_date date not null,
     status text not null,
+    paid_date date ,
     payment_method text not null,
     notes text not null,
     created_at datetime default current_timestamp,

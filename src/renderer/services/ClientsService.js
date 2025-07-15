@@ -52,6 +52,25 @@ class ClientsService {
   }
 
 
+  async getTotalClients(params)  {
+    
+    try {
+
+
+      const totalQuery = {
+      select: `COUNT(id) as total`,
+    }
+
+      const client =await window.electron.database.select("clients", totalQuery,[],{one: true})
+
+      return client
+      
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+
   async getClientById(id) {
     try {
       const query = {}
@@ -88,24 +107,25 @@ class ClientsService {
     console.log("filterString", filterString)
 
     const select = `DISTINCT clients.*,
-  -- Préstamos
-  COUNT(DISTINCT l.id) AS total_loans,
-  COUNT(DISTINCT CASE WHEN l.status = 'active' THEN l.id END) AS total_active_loans,
-  COUNT(DISTINCT CASE WHEN l.status = 'completed' THEN l.id END) AS total_completed_loans,
-  COUNT(DISTINCT CASE WHEN l.status = 'canceled' THEN l.id END) AS total_canceled_loans,
-  -- Pagos
-  COUNT(DISTINCT p.id) AS total_payments,
-  COUNT(DISTINCT CASE WHEN p.status = 'paid' THEN p.id END) AS total_paid_payments,
-  COUNT(DISTINCT CASE WHEN p.status = 'pending' THEN p.id END) AS total_pending_payments,
-  COUNT(DISTINCT CASE WHEN p.status = 'expired' THEN p.id END) AS total_expired_payments,
-  COUNT(DISTINCT CASE WHEN p.status = 'incomplete' THEN p.id END) AS total_incomplete_payments,
-  SUM(
-  CASE 
-    WHEN p.status = 'expired' THEN p.total_amount
-    WHEN p.status = 'incomplete' THEN p.left_amount
-    ELSE 0
-  END
-) AS total_debt_payments
+    -- Préstamos
+    COUNT(DISTINCT l.id) AS total_loans,
+    COUNT(DISTINCT CASE WHEN l.status = 'active' THEN l.id END) AS total_active_loans,
+    COUNT(DISTINCT CASE WHEN l.status = 'completed' THEN l.id END) AS total_completed_loans,
+    COUNT(DISTINCT CASE WHEN l.status = 'canceled' THEN l.id END) AS total_canceled_loans,
+    COUNT(DISTINCT CASE WHEN l.status = 'pending' THEN l.id END) AS total_pending_loans,
+    -- Pagos
+    COUNT(DISTINCT p.id) AS total_payments,
+    COUNT(DISTINCT CASE WHEN p.status = 'paid' THEN p.id END) AS total_paid_payments,
+    COUNT(DISTINCT CASE WHEN p.status = 'pending' THEN p.id END) AS total_pending_payments,
+    COUNT(DISTINCT CASE WHEN p.status = 'expired' THEN p.id END) AS total_expired_payments,
+    COUNT(DISTINCT CASE WHEN p.status = 'incomplete' THEN p.id END) AS total_incomplete_payments,
+    SUM(
+    CASE 
+      WHEN p.status = 'expired' THEN p.total_amount
+      WHEN p.status = 'incomplete' THEN p.left_amount
+      ELSE 0
+    END
+  ) AS total_debt_payments
   
   `;
 

@@ -11,7 +11,33 @@ const initialState = {
         page: 1,
         totalItems: 0,
         limit: 10,
-        },  
+        },
+    monthly_stats:{
+        percent_paid:0,
+        expected_amount:0,
+        paid_amount:0
+    },
+    
+    total_active_loans:0, 
+    total_clients:0,
+    total_loans:0,
+    total_lend:0,
+    left_amount:0,
+    paid_amount:0,
+    net_gains:0,
+    brute_gains:0,
+    loans_state:{
+        pending:0,
+        completed:0,
+        active:0,
+        cancelled:0
+    },
+    payments_state:{
+        pending:0,
+        expired:0,
+        paid:0,
+        incomplete:0
+    },
     isLoading: false,
     error: null,    
 };  
@@ -22,6 +48,25 @@ const clientsSlice = createSlice({
   name: 'clients',    
     initialState,   
     reducers: { 
+
+        setClientsStats(state, action) {
+        for (const key in action.payload) {
+            if (Object.prototype.hasOwnProperty.call(state, key)) {
+            const val = action.payload[key];
+
+            state[key] = val;
+            }
+        }
+        },
+        setStats(state, action) {
+        for (const key in action.payload) {
+            if (Object.prototype.hasOwnProperty.call(state, key)) {
+            const val = action.payload[key];
+
+            state[key] = val;
+            }
+        }
+        },
 
         setClient: (state, action) => {
             state.client=action.payload;
@@ -81,8 +126,10 @@ export const {
   setPaginationData,
   setLoading,
   setError,
+  setClientsStats,
 addClient,
 setClient,
+setStats
 } = clientsSlice.actions;   
 
 

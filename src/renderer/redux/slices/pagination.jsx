@@ -4,10 +4,11 @@ const initialState = {
     
     page:1,
     currentPage:1,
-    totalPages:5,
+    totalPages:1,
     limitPerPage:5,
     totalItems:0,
-    filter:null
+    filter:null,
+    limit:5
                 
 }
 
@@ -31,17 +32,18 @@ const paginationSlice = createSlice({
        setPaginationData:(state,action)=>{
 
             const {page,limitPerPage,totalItems} = action.payload
-            state.page=action.payload.page
+            state.page=page
            // state.currentPage=action.payload.page
             state.limitPerPage=LimitPerPage
             state.totalItems = totalItems
             state.totalPages = totalItems>limitPerPage ? Math.ceil(limitPerPage/totalItems):1
         },
-        resetPaginationData:(state)=>{
+        resetPaginationData:(state,action)=>{
             state.page=1
             state.currentPage=1
-            state. totalPages=1
-            state.limitPerPage=10
+            state.totalItems = action.payload.totalItems ? action.payload.totalItems  : state.totalItems
+            state. totalPages= action.payload.totalPages ? action.payload.totalPages  :state.totalPages
+            state.limitPerPage=action.payload.limitPerPage ? action.payload.limitPerPage  : state.limitPerPage
         },
         setFilter:(state,action)=>{
             state.filter = action.payload

@@ -28,7 +28,7 @@ export const Modal = ({
   useEffect(() => {
     const handleEscape = (event) => {
       if (event.key === "Escape") {
-        dispatch(closeModa());
+        dispatch(closeModal());
       }
     };
 

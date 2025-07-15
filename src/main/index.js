@@ -6,11 +6,11 @@ const logger = require('./logger.js');
 const dotenv = require('dotenv');
 const { ipcMain } = require('electron');
 
+
 dotenv.config();
-
-  
-           
-
+ 
+   
+          
 /** 
  * ipcs 
  */ 
@@ -20,8 +20,8 @@ dotenv.config();
 ipcMain.handle('files', appStatsIpc);
    
  */
-
-
+ 
+  
 ipcMain.handle('get-app-version', () => {
   return app.getVersion(); // Devuelve la versión de package.json
 });
@@ -54,9 +54,6 @@ ipcMain.handle('token', tokenIpc);
  */
 const passwordIpc = require('./ipc/passwordIpc');
 ipcMain.handle('password', passwordIpc);
-
-
- 
 
 
 

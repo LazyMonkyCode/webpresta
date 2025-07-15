@@ -34,7 +34,7 @@ export default function NotificationDropdown() {
         }
       }
     })
-    await window.electron.updater.checkForUpdates()
+    //await window.electron.updater.checkForUpdates()
    // console.log()
     }
 

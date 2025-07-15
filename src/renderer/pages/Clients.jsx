@@ -49,6 +49,7 @@ export default function Clients() {
         const clientsService = new ClientsService();
         const clientsData = await clientsService.getClients(pagination.filter,pagination.page, pagination.limitPerPage);
         
+        console.log(clientsData)
         dispatch(setClients(clientsData.clients || []));
         dispatch(setTotalItems(clientsData.total || 0));
        // dispatch(setPaginationData(clientsData.paginationData));

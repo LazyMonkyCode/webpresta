@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect,useState } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 //import PageMeta from "../components/common/PageMeta";
 
@@ -9,13 +9,25 @@ import { openModal, closeModal } from "../redux/slices/modalSlice";
 
 import ClientsService from "../services/ClientsService";
 import LoansService from "../services/LoansService";
-import { setClient } from "../redux/slices/clientsSlice";
+import PaymentsService from "../services/PaymentsService";
+import { setClient, setStats } from "../redux/slices/clientsSlice";
 import { useParams } from 'react-router-dom';
-
+import { setLoans } from '../redux/slices/loansSlice'
 //import EditModalClient from "../components/client/EditModalClient";
 import ClientMetaCard from "../components/client/ClientMetaCard";
+import { setPayments } from '../redux/slices/paymentsSlice'
+import Badge from "../components/ui/badge/Badge";
+import LoansList from "../components/client/LoansList";
+import { resetPaginationData } from "../redux/slices/pagination";
+//import PaymentsList from "../components/client/PaymentsList";
 
-
+import PaymentsList from "../components/payments/PaymentsList";
+import ClientStatCards from "../components/client/ClientStatCards";
+import { FaSackDollar } from "react-icons/fa6";
+import DeleteLoanModal from "../components/loan/DeleteLoanModal";
+import EditLoanModal from "../components/loan/EditLoanModal";
+import DeleteClientModal from "../components/client/DeleteClientModal";
+import PayPaymentModal from "../components/payments/PayPaymentModal";
 export default function ClientPage() {
 
   const { id } = useParams();
@@ -23,12 +35,18 @@ export default function ClientPage() {
   const dispatch = useDispatch();
 
   const client = useSelector((state) => state.clients.client);
+  const pagination = useSelector((state) => state.pagination);
 
+  const { selectedLoan } = useSelector((state) => state.loans);
+
+  const [totalItems ,setTotalItems ] = useState()
 
   useEffect(() => {
 
 
-    async function fetchClients() {
+    //console.log(id)
+
+    async function fetchClient() {
       try {
 
         //  console.log("pagination", pagination)
@@ -46,178 +64,145 @@ export default function ClientPage() {
       }
     }
 
-    fetchClients();
+    fetchClient();
 
   }, [/* data, dispatch,pagination.page,pagination.filter */]);
 
 
-  
-    useEffect(() => {
-      
-      async function fetchLoansClients() { 
-        try {
-  
-          //console.log("pagination", pagination)
-          const loansService = new LoansService()
-  
-          const loansData  =await loansService.getClientLoans({
-            client_id:id
-          })
-  
-  
-          console.log(loansData,"loansasdasda")
-  
-         /*  dispatch(setClients(clientsData.clients || []));
-          dispatch(setTotalItems(clientsData.total || 0)); */
-         // dispatch(setPaginationData(clientsData.paginationData));
-  
-        } catch (error) {
-          console.error("Error fetching clients:", error);
-        }
-      }
-      
-      fetchLoansClients();
 
-    }, []);
-  
-  
+  useEffect(() => {
+
+    async function fetchLoansClients() {
+      try {
+
+        //console.log("pagination", pagination)
+        const loansService = new LoansService()
+
+        const loansData = await loansService.getClientLoans({
+          client_id: id
+        })
+
+
+        console.log(loansData, "loansasdasda")
+
+        dispatch(setLoans(loansData.loans))
+
+        dispatch(setStats({
+          total_loans: loansData.loans.filter((l) => l.status == "active").length,
+          total_lend: loansData.loans.reduce((acc, current) => acc += current.amount, 0),
+          paid_amount: loansData.loans.reduce((acc, current) => acc += current.paid_amount, 0),
+          left_amount: loansData.loans.reduce((acc, current) => acc += current.left_amount, 0),
+        }))
+
+        /*  dispatch(setClients(clientsData.clients || []));
+         dispatch(setTotalItems(clientsData.total || 0)); */
+        // dispatch(setPaginationData(clientsData.paginationData));
+
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+      }
+    }
+
+    fetchLoansClients();
+
+  }, []);
+
+
+  useEffect(() => {
+
+    async function fetchLoanPayments() {
+      try {
+
+
+
+        //console.log("pagination", pagination)
+        const paymentsService = new PaymentsService()
+        let paymentssData
+
+        console.log(selectedLoan, "selected loan")
+        if (selectedLoan) {
+          paymentssData = await paymentsService.getLoanPayments({
+            loan_id: selectedLoan.id
+          }, pagination.page, pagination.limitPerPage)
+          console.log(paymentssData, "selected loanasdasd")
+        } else {
+          paymentssData = await paymentsService.getClientPayments({
+            client_id: id
+          }, pagination.page, pagination.limitPerPage)
+        }
+
+        setTotalItems(paymentssData.total)
+        console.log(paymentssData, "peiments")
+
+
+        if(totalItems!= paymentssData.total){
+          dispatch(resetPaginationData({
+          
+          totalItems: paymentssData.total,
+        }))
+        }
+        
+
+        console.log(paymentssData.payments, "lpaymentsasdasdasdasda")
+        dispatch(setPayments(paymentssData.payments))
+        /*  dispatch(setClients(clientsData.clients || []));
+         dispatch(setTotalItems(clientsData.total || 0)); */
+        // dispatch(setPaginationData(clientsData.paginationData));
+
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+      }
+    }
+
+
+    fetchLoanPayments()
+  }, [selectedLoan,pagination]);
+
+
 
   return (
     <div>
       <PageBreadcrumb pageTitle={"Cliente"} />
       <ClientStatCards></ClientStatCards>
       <div className="grid grid-cols-12 gap-5">
-      <ClientLoansPayments />
-      <ClientMetaCard></ClientMetaCard>
+        <ClientLoansPayments />
+        <ClientMetaCard></ClientMetaCard>
       </div>
-      
-
-      
-
+      <EditLoanModal></EditLoanModal>
+      <DeleteLoanModal></DeleteLoanModal>
+      <DeleteClientModal></DeleteClientModal>
+      <PayPaymentModal></PayPaymentModal>
     </div>
   );
 }
 
-import PaymentsList from "../components/payments/PaymentsList";
 
-const ClientLoansPayments=()=>
-{
+const ClientLoansPayments = () => {
 
-  return (<div className="flex flex-col gap-3 col-span-8 p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-     
-     <LoansList></LoansList>
-     <PaymentsList></PaymentsList>
-    </div>)
-}
+  const { loans } = useSelector(state => state.loans)
+  return (<div className="flex flex-col gap-3 xl:col-span-8 sm:col-span-12 lg:col-span-12  sm:order-2 md:order-2 lg:col-span-12 p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
 
+    {
 
-import Badge from "../components/ui/badge/Badge";
-import LoansList from "../components/client/LoansList";
-//import PaymentsList from "../components/client/PaymentsList";
+      loans.length ? (<>
+        <LoansList></LoansList>
+        <PaymentsList></PaymentsList>
+      </>)
 
+        : (<div className="h-[400px] flex gap-3 flex-col justify-center items-center">
 
-const ClientStatCards = () => {
+          <span className="p-4 bg-gray-200 text-lg text-gray-400  rounded-full">
 
-
-
-  return (<div className="grid grid-cols-1 gap-4 sm:grid-cols-4 md:gap-6 mb-6">
-
-    {/* <!-- Metric Item Start --> */}
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-      <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-          {/* <GroupIcon className="text-gray-800 size-6 dark:text-white/90" /> */}
-      </div>
-
-      <div className="flex items-end justify-between mt-5">
-        <div>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Total Prestamos en curso
+            <FaSackDollar></FaSackDollar>
           </span>
-          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            4
-          </h4>
-        </div>
-        <Badge color="success">
-          {/* <ArrowUpIcon />
-          11.01% */}
-        </Badge>
-      </div>
-    </div>
-    {/* <!-- Metric Item End --> */}
 
-    {/* <!-- Metric Item Start --> */}
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-      <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-        {/* <BoxIconLine className="text-gray-800 size-6 dark:text-white/90" /> */}
-      </div>
-      <div className="flex items-end justify-between mt-5">
-        <div>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Total Prestado
-          </span>
-          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            $1.000.000
-          </h4>
-        </div>
+          <h1 className="text-2xl font-bold text-gray-500">este eliente no posee prestamos</h1>
+          <p className="text-gray-400">Agrega un prestamo a este cliente desde el boton agregar prestamo</p>
+        </div>)
 
-        <Badge color="error">
-         {/*  <ArrowDownIcon />
-          9.05% */}
-        </Badge>
-      </div>
-    </div>
-    {/* <!-- Metric Item End --> */}
-
-    {/* <!-- Metric Item Start --> */}
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-      <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-          {/* <GroupIcon className="text-gray-800 size-6 dark:text-white/90" /> */}
-      </div>
-
-      <div className="flex items-end justify-between mt-5">
-        <div>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Total Devuelto
-          </span>
-          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            $500.000
-          </h4>
-        </div>
-        <Badge color="success">
-          {/* <ArrowUpIcon />
-          11.01% */}
-        </Badge>
-      </div>
-    </div>
-    {/* <!-- Metric Item End --> */}
-
-    {/* <!-- Metric Item Start --> */}
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-      <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-          {/* <GroupIcon className="text-gray-800 size-6 dark:text-white/90" /> */}
-      </div>
-
-      <div className="flex items-end justify-between mt-5">
-        <div>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Restante Por devolver
-          </span>
-          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            $500.000
-          </h4>
-        </div>
-        <Badge color="success">
-          {/* <ArrowUpIcon />
-          11.01% */}
-        </Badge>
-      </div>
-    </div>
-    {/* <!-- Metric Item End --> */}
+    }
   </div>)
 }
-
-
-
 
 
 

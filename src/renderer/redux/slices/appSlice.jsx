@@ -56,5 +56,5 @@ const appSlice = createSlice({
 
 
 
-    export const {   setAppVersion,setAppName ,  isUpdateAvailable,setLatestVersion  ,setIsUpdateAvailable     } = appSlice.actions;
+export const {   setAppVersion,setAppName ,  isUpdateAvailable,setLatestVersion  ,setIsUpdateAvailable } = appSlice.actions;
 export default  appSlice.reducer;

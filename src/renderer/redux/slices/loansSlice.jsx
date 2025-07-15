@@ -18,10 +18,19 @@ const loansSlice = createSlice({
     initialState,   
     reducers: { 
         setLoans: (state, action) => {
+
+            console.log(action.payload)
             state.loans = action.payload;
         },
-        setSelectedLoans: (state, action) => {
-            state.selectedLoans = action.payload;
+        setSelectedLoan: (state, action) => {
+
+            const loan = action.payload
+
+            const {selectedLoan} = state
+
+            console.log(selectedLoan,loan)
+            
+            state.selectedLoan = selectedLoan ? selectedLoan.id == loan.id ? null : loan : loan
         },
        
         setLoading: (state, action) => {
@@ -54,7 +63,7 @@ const loansSlice = createSlice({
 
 export const {
   setLoans,
-  setSelectedLoans,
+  setSelectedLoan,
  
   setLoading,
   setError,

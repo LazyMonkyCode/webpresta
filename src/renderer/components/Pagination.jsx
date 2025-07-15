@@ -24,11 +24,14 @@ function Pagination({size}) {
 
   const pagination = useSelector(state => state.pagination)
 
-  const totalPages =  pagination.totalItems > pagination.limitPerPage ?  Math.ceil(pagination.totalItems / pagination.limitPerPage)  : 1; 
+  console.log(pagination,"pagination data")
+
+  const totalPages =  pagination.totalItems > pagination.limitPerPage ?  
+  Math.ceil(pagination.totalItems / pagination.limitPerPage)  : 1; 
 
   const pages = Array.from({ length: totalPages }, (_, i) => i); // Ejemplo: números 0 al 4
 
-
+  console.log(totalPages,pages,pagination.totalItems,pagination.limitPerPage)
  const dispatch = useDispatch() 
 
 

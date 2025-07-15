@@ -36,6 +36,8 @@ const Button = ({
     
     success:  "bg-green-500 text-white shadow-theme-xs hover:bg-green-600 disabled:bg-green-300",
 
+        danger:  "bg-red-500 text-white shadow-theme-xs hover:bg-red-600 disabled:bg-green-300",
+
     
     };
 

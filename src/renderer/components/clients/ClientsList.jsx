@@ -8,7 +8,7 @@ import ClientFilter from "./ClientFilter";
 import Badge from "../ui/badge/Badge";
 import { Link } from "react-router";
 import Pagination from '../Pagination';
-
+import { FaCreditCard, FaSackDollar } from "react-icons/fa6";
 function ClientsList() {
   // const [clients,setClients] = useState([{id:1,name:"pedro"},{id:2,name:"juan"}])
   const { clients } = useSelector(state => state.clients)
@@ -43,7 +43,7 @@ function ClientsList() {
           <h1 className="font-bold text-2xl">No se econtraron clientes</h1>
 
         </div>)}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4   md:gap-6 mb-5  sm:grid-cols-1 sm:gap-2 rounded-2xl  p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
+      <div className="grid grid-cols-1  md:grid-cols-2 lg:grid-cols-3 lg:grid-cols-3   md:gap-6 mb-5  sm:grid-cols-1 sm:gap-2 rounded-2xl  p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
         {/*  <div className="col-span-12">
            <Pagination  />
         </div> */}
@@ -60,63 +60,147 @@ function ClientsList() {
   )
 }
 
+import { FaStar } from "react-icons/fa6";
+
 import { CreditCard, DollarSign, CheckCircle, Clock, XCircle } from 'lucide-react';
 
 import { UserRound, CalendarDays } from 'lucide-react';
 
 const ClientCard = ({ client }) => {
-  const {id,nickname } = client;
+  const { id, nickname } = client;
+
+  const reputationScore = (() => {
+    const totalPayments =
+      client.total_paid_payments +
+      client.total_expired_payments +
+      client.total_pending_payments +
+      client.total_incomplete_payments;
+
+    if (totalPayments === 0) return 0;
+
+    const score = (client.total_paid_payments / totalPayments) * 100;
+    return Math.round(score);
+  })();
+
   return (
-    <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-md border border-gray-100">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
-          <UserRound size={32} />
+    <div className="bg-blue-500 text-white sm:mb-2 shadow-lg rounded-xl py-4 px-4 w-full max-w-md border border-gray-100">
+      <div className=" flex justify-between p-0 gap-4">
+        <div className="flex flex-col items-center">
+          {/* Icono de usuario */}
+          <div className="size-20 p-3 bg-blue-600 text-white rounded-full flex items-center justify-center">
+            <UserRound size={34} />
+          </div>
+
+          {/* Reputación */}
+          <div className="w-20 mt-2">
+            <div className="flex items-center justify-center gap-1">
+              <FaStar className="text-yellow-400" />
+              <span className="text-white text-xs">{reputationScore}%</span>
+            </div>
+            <div className="w-full bg-white h-2 rounded-full overflow-hidden mt-1">
+              <div
+                className={`h-full transition-all duration-300 ${reputationScore > 80
+                    ? "bg-green-500"
+                    : reputationScore > 50
+                      ? "bg-yellow-400"
+                      : "bg-red-500"
+                  }`}
+                style={{ width: `${reputationScore}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
-        <div>
-          <Link to={"/clients/"+client.id}><h2 className="text-lg font-semibold">{nickname}</h2></Link>
-          <p className="text-sm text-gray-500">cliente desde {"23/a23/20"}</p>
+
+
+        <div className="w-2/4">
+          <Link to={"/clients/" + client.id}><h2 className="text-md font-semibold">{nickname}</h2></Link>
+          <Badge variant="solid" className="w-1/2" color={client.total_active_loans ? "success" : "primary"}>{
+            client.total_active_loans ? "activo" : "no activo"
+          }</Badge>
+          {/* <div className="flex gap-2 mt-2 items-center">
+            <span className="bg-success-500 p-2  flex items-center justify-center rounded-full">
+              <FaSackDollar className="text-white text-xl" />
+            </span>
+            <div>
+              <span className="bg-white border border-gray-300 p-2 rounded-full ">
+                <label className="text-sm text-success-500 font-semibold">1</label>
+                <label className="">/10</label>
+              </span>
+            </div>
+          </div> */}
+          <div className="flex flex-col justify-between">
+            <div className="p-2">
+              something
+            </div>
+            <div className="flex gap-2  items-center">
+              <span className="bg-blue-600 p-2 border border-white  flex items-center justify-center rounded-full">
+                <FaCreditCard className="text-white " />
+              </span>
+              <div className="flex gap-2">
+                <span className=" w-6 h-6 flex items-center  border border-gray-300 justify-center bg-red-500  rounded-full text-white ">
+                  {client.total_expired_payments}
+                </span>
+                <span className=" w-6 h-6 flex items-center  border border-gray-300 justify-center bg-green-600  rounded-full text-white ">
+                  {client.total_paid_payments}
+                </span>
+                <span className=" w-6 h-6 flex items-center border border-gray-300  justify-center bg-blue-600  rounded-full text-white ">
+                  {client.total_pending_payments}
+                </span>
+
+                <span className=" w-6 h-6 flex items-center  border border-gray-300 justify-center bg-yellow-600  rounded-full text-white ">
+                  {client.total_incomplete_payments}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <div className="bg-white text-black border border-gray-300 p-1 rounded-lg">
+          <div className="flex flex-col  gap-1 mt-2 items-center ">
+            <span className="   flex flex-col items-center justify-center rounded-full">
+              <FaSackDollar className=" text-xl" />
+              <span className="text-xs">prestamos</span>
+            </span>
+            <div>
+              <span className="flex items-ceter justify-center gap-1 bg-white w-full p-2 rounded-full ">
+                <label className="flex items-end text-sm text-success-500 font-semibold">{client.total_completed_loans}</label>
+                <label className="font-semibold">/{client.total_loans}</label>
+
+              </span>
+
+            </div>
+            <div className="flex gap-2">
+              <span className="text-blue-600 font-semibold"> {client.total_active_loans}</span>
+              <span className="text-yellow-400 font-semibold"> {client.total_pending_loans}</span>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 text-sm text-gray-700">
-        <div>
-          <p className="font-medium text-gray-500 flex gap-1 rounded-full border border-gray-200 p-2">
-            <Handshake></Handshake>
-            <span className="flex  justify-between w-full">
-              <label>
-                2/10
-              </label>
-              <label >6</label>
-              <label>2</label>
-              <label>0</label>
-            </span>
-          </p>
-
-        </div>
-
-        <div>
-          <p className="font-medium text-gray-500 flex gap-1 rounded-full border border-gray-200 p-2">
-            <CreditCard />
-            <span className="flex   w-full">
-              <label className="rounded-full text-xs   bg-blue-500 text-white flex items-center">
-                2
-              </label>
-              <label >6</label>
-              <label>2</label>
-              <label>0</label>
-            </span>
-          </p>
-
-        </div>
-
-
-      </div>
-
-      <div className="mt-6 flex items-center gap-2 text-sm text-gray-600">
+      {/*  <div className="mt-6 flex items-center gap-2 text-sm text-gray-600">
         <CalendarDays size={18} className="text-blue-500" />
         <span>Próximo pago: </span>
         <span className="font-medium text-gray-800">{"12/12/2012"}</span>
-      </div>
+      </div> */}
+      {/* Barra de reputación */}
+      {/* <div className="mt-6">
+  <label className="text-sm font-medium text-white">Reputación</label>
+  <div className="w-full bg-white h-3 rounded-full overflow-hidden mt-1">
+    <div
+      className={`h-full transition-all duration-300 ${
+        reputationScore > 80
+          ? "bg-green-500"
+          : reputationScore > 50
+          ? "bg-yellow-400"
+          : "bg-red-500"
+      }`}
+      style={{ width: `${reputationScore}%` }}
+    ></div>
+  </div>
+  <span className="text-xs text-white mt-1 block text-right">{reputationScore}%</span>
+</div> */}
     </div>
   );
 };

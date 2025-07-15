@@ -12,7 +12,9 @@ CREATE TABLE IF NOT EXISTS stats (
 
 
 
---insert into stats (total_users, total_clients, total_loans, total_payments, activity_count) values (0, 0, 0, 0, 0);
+
+
+insert into stats (total_users, total_clients, total_loans, total_payments, activity_count) values (0, 0, 0, 0, 0);
 
 
 -- clients
