@@ -155,7 +155,7 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Bienvenido, {resumen.cliente?.nombre} {resumen.cliente?.apellido}
+        Bienvenido,{/*  {resumen.cliente?.nombre} {resumen.cliente?.apellido} */}
       </h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
