@@ -1,6 +1,6 @@
 import io, { Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'ws://localhost:4000' 
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'wss://prestamosweb.up.railway.app' 
 
 //||  ''; // Asegúrate que la URL es correcta y accesible
 
