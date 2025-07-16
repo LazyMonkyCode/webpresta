@@ -79,6 +79,9 @@ const clienteSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  temporal_token:{
+    type:String,
+  },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

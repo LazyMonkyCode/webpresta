@@ -346,9 +346,11 @@ const ProfilePage: React.FC = () => {
       toast.error('Primero debes ingresar un email válido');
       return;
     }
-    setVerificationType('email');
+
+    //send verfication 
+    /* setVerificationType('email');
     setVerificationValue(formData.email);
-    setShowVerificationModal(true);
+    setShowVerificationModal(true); */
   };
 
   const handleVerifyPhone = () => {

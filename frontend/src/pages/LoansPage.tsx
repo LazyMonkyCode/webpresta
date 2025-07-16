@@ -45,7 +45,7 @@ const LoansPage: React.FC = () => {
 
   // Filtrar préstamos según la pestaña activa
   const activeLoans = prestamos.filter(prestamo => 
-    prestamo.status !== 'active' && prestamo.status !== 'rejected'
+    prestamo.status !== 'pending' && prestamo.status !== 'rejected' 
   );
   
   const pendingLoans = prestamos.filter(prestamo => 
@@ -392,7 +392,7 @@ const LoansPage: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>Préstamos Activos</span>
-                  {activeLoans.length > 0 && (
+                  {activeLoans.map((p)=>p.status =="active").length > 0 && (
                     <span className="bg-indigo-100 text-indigo-600 text-xs font-medium px-2 py-0.5 rounded-full">
                       {activeLoans.length}
                     </span>

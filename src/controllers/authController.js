@@ -119,7 +119,67 @@ const usernameLogin=async(req,res)=>{
    
 }
 
+import { sendEmail } from '../utils/mailer.js';
 
+function generarCodigoVerificacion() {
+  return Math.floor(10000 + Math.random() * 90000).toString();
+}
+
+const verificarEmail = async (params)=> {
+    
+  try {
+    const {email,code}  = params.body
+
+  if(email){
+
+    const generateCode = generarCodigoVerificacion()
+    
+
+    //send email
+    await sendEmail(
+      email,
+      "email verification",
+      `<p>tu codigo para verificar tu email es :</p>
+          <h1>${generateCode}</h1>`
+    )
+
+    const token =  jwt.sign({
+      code:generateCode,
+      client_id:req.clientId
+    },process.env.JWT_SECRET,{
+      expiresIn:"5m"
+    })
+
+    const cliente = await Cliente.find({id:req.clientId,})
+
+    cliente.temporal_token = token
+
+    await cliente.save()
+    
+  }
+
+
+  if(code){
+    //verify code
+    const cliente = await Cliente.find({id:req.clientId,})
+
+    if(!cliente.temporal_token ) return  res.status(404).json({error:"no tienes codigo de verificacion"})
+
+    const decode = jwt.verify(cliente.temporal_token)
+    if(!decode) return  res.status(404).json({error:"Tu codigo de verificacion ha vencido reenvia le email"})
+
+    if(decode.code != code ) return  res.status(404).json({error:"Tu codigo de verificacion no coincide con el generado"})
+    
+    cliente.temporal_token =''
+
+    await cliente.save()
+
+
+  }
+  } catch (error) {
+    return  res.status(404).json({error:error})
+  }
+}
 const verifyToken=async(req,res)=>{
    
         try {
@@ -279,5 +339,6 @@ export default {
     verifyToken,
     registerUser,
     setPassword,
-    setPasswordByEmail
+    setPasswordByEmail,
+    verificarEmail
 }
