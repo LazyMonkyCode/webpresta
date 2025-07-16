@@ -107,7 +107,7 @@ const LoanDetailPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner  size='large'/>;
   }
 
   if (error && !detallePrestamo) {

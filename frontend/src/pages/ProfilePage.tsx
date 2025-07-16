@@ -318,10 +318,10 @@ const ProfilePage: React.FC = () => {
 
   const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    /* if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error('Las contraseñas no coinciden');
       return;
-    }
+    } */
     if (passwordData.newPassword.length < 6) {
       toast.error('La nueva contraseña debe tener al menos 6 caracteres');
       return;
@@ -397,7 +397,7 @@ const ProfilePage: React.FC = () => {
   const hasPassword = !!user?.hasPassword;
 
   if (!user && loading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner  size='large'/>;
   }
   if (!user) {
     return <p className="text-center p-4">Usuario no encontrado o no autenticado.</p>;
@@ -925,7 +925,7 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 {/* Configuración de Vista de Pagos */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
+               {/*  <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <div className="flex items-center mb-6">
                     <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -977,7 +977,7 @@ const ProfilePage: React.FC = () => {
                       </div>
                     </button>
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
 

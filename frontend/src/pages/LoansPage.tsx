@@ -45,7 +45,7 @@ const LoansPage: React.FC = () => {
 
   // Filtrar préstamos según la pestaña activa
   const activeLoans = prestamos.filter(prestamo => 
-    prestamo.status !== 'pending' && prestamo.status !== 'rejected'
+    prestamo.status !== 'active' && prestamo.status !== 'rejected'
   );
   
   const pendingLoans = prestamos.filter(prestamo => 
@@ -207,7 +207,7 @@ const LoansPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner  size='large'/>;
   }
 
   if (error) {

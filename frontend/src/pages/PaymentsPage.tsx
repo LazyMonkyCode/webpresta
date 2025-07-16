@@ -384,7 +384,7 @@ const PaymentsPage: React.FC = () => {
   // ***** FIN DEFINICIÓN DE COLUMNAS *****
 
   if (isLoading && payments.length === 0) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner size='large' />;
   }
 
   // TODO: Mejorar la presentación de errores
@@ -487,7 +487,7 @@ const PaymentsPage: React.FC = () => {
                   <span>Tabla</span>
                 </div>
               </button>
-              <button
+             {/*  <button
                 onClick={() => setPaymentViewMode('list')}
                 className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                   paymentViewMode === 'list'
@@ -501,7 +501,7 @@ const PaymentsPage: React.FC = () => {
                   </svg>
                   <span>Lista</span>
                 </div>
-              </button>
+              </button> */}
             </div>
           </div>
 
