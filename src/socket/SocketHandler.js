@@ -61,18 +61,21 @@ class SocketHandler {
             const decoded = jwt.verify(token, this.JWT_SECRET);
 
             socket.decoded = decoded;
-            //console.log("decoded",decoded)
+
+
+            console.log("decoded",decoded)
             //Si el usuario viene de la app, se debe verificar si es un usuario
-            if (typeof decoded.id === "number") {
+            if (decoded.user && typeof decoded.user.id === "number") {
+                console.log("nombeer")
                 const authUserSuccess =await this.usersSocket.authentication(socket, next);
-                //console.log("authUserSuccess",authUserSuccess)
+                console.log("authUserSuccess",authUserSuccess)
                 if(authUserSuccess) return next()
                 return next(new Error('Authentication error:No User found.'));
 
             } else {
             //Si el usuario viene de la web, se debe verificar si es un cliente o un usuario
                 try {
- 
+                    console.log("otra cosa")
                     const authClientSuccess =await this.clientsSocket.authentication(socket, next);
 
                     if(authClientSuccess) return next()
@@ -138,7 +141,7 @@ class SocketHandler {
         
         
         const notificationHandler = new NotificationsHandler(socket,this.usersSocket.users,this.clientsSocket.clients);
-        socket.on("new_notification",notificationHandler.onNotification.bind(notificationHandler));
+        socket.on("new-notification",notificationHandler.onNotification.bind(notificationHandler));
     }
 
     async handleDisconnect(socket) {

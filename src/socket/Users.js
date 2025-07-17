@@ -24,16 +24,19 @@ class UsersSocket {
     }
 
     async authentication(socket, next) {
+
+        console.log("asñkahsdkjasdaksjdaksjdaksjd")
         try {
 
            // console.log("socket.decoded.id", socket.decoded.id)
             //consolelog("socket.decoded.id", socket.decoded.id)
 
-            //consolelog("user", user)
-            const query = typeof socket.decoded.id == "number" ? 
+            console.log("user", socket.decoded.user)
+
+            const query = typeof socket.decoded.user.id == "number" ? 
             { 
-                sqlite_id: socket.decoded.id.toString() } 
-            : { _id: socket.decoded.id.toString() }
+                sqlite_id: socket.decoded.user.id.toString() } 
+            : { _id: socket.decoded.user.id.toString() }
             const user = await User.findOne(query);
 
            

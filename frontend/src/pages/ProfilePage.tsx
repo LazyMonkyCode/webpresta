@@ -289,7 +289,7 @@ const ProfilePage: React.FC = () => {
         data.message = data.message.replace('{name}', response.cliente.nickname || '');
         data.link = data.link.replace('{id}', response.cliente.sqlite_id);
         
-        socketService.emit('new_notification', {
+        socketService.emit('new-notification', {
           ...data,
           from_client: response.cliente,
           to_user:"every_user",
@@ -297,6 +297,16 @@ const ProfilePage: React.FC = () => {
             ...response.cliente,
           }
         });
+
+        socketService.emit('new-client-event', {
+          ...data,
+          from_client: response.cliente,
+          to_user:"every_user",
+          data: {
+            ...response.cliente,
+          }
+        });
+
         const _response = await apiService.createClientActivity({
           action: 'profile_update',
           details: 'Actualizaste tu información personal',

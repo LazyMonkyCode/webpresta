@@ -99,7 +99,7 @@ class NotificationsHandler  {
 
        user.user.notification.push(notification._id)
        user.user.save()
-       user.emit('sendNotification',notification)
+       user.emit('new-notification',notification)
         
     }
 
@@ -111,7 +111,7 @@ class NotificationsHandler  {
             client.client.notification.push(notification._id)
             await client.client.save()
             console.log("notificacion puesta",client.id)
-            client.socket.emit('sendNotification',notification)
+            client.socket.emit('new-notification',notification)
             }
         } catch (error) {
             console.log("error recastToClient ",error)
@@ -128,7 +128,7 @@ class NotificationsHandler  {
                     user.user.notification.push(notification)
                     await user.user.save()
                     console.log("notificacion puesta",user.id)
-                    user.socket.emit('sendNotification',notification)
+                    user.socket.emit('new-notification',notification)
                 }
             })
         } catch (error) {
@@ -141,7 +141,7 @@ class NotificationsHandler  {
             this.clients.forEach(client => {
                 client.notification.push(notification)
                 client.save()
-                client.emit('sendNotification',notification)
+                client.emit('new-notification',notification)
             })
         } catch (error) {
             console.log("error recastToAllClients ",error)

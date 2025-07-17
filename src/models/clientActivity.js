@@ -15,7 +15,11 @@ const clientActivitySchema = new mongoose.Schema({
             'pending_loan_request',
             'pending_loan_update'
         ] 
-  },    
+  }, 
+  client_id:{
+     type: mongoose.Schema.Types.ObjectId,
+    ref: 'Cliente'
+  } ,  
   details: {
     type: String,
     required: false
