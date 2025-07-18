@@ -85,7 +85,7 @@ const PaymentsPage: React.FC = () => {
   // Cargar configuración de vista de pagos del localStorage
   useEffect(() => {
     const savedSettings = localStorage.getItem('notificationSettings');
-    if (savedSettings) {
+    /* if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
         if (parsed.paymentViewMode) {
@@ -94,12 +94,12 @@ const PaymentsPage: React.FC = () => {
       } catch (error) {
         console.error('Error al cargar configuración de vista:', error);
       }
-    }
+    } */
   }, []);
 
   // Escuchar cambios en la configuración de vista
   useEffect(() => {
-    const handleStorageChange = () => {
+   /*  const handleStorageChange = () => {
       const savedSettings = localStorage.getItem('notificationSettings');
       if (savedSettings) {
         try {
@@ -111,11 +111,11 @@ const PaymentsPage: React.FC = () => {
           console.error('Error al cargar configuración de vista:', error);
         }
       }
-    };
+    }; */
 
-    window.addEventListener('storage', handleStorageChange);
+    /* window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  } */}, []);
 
   // Carga inicial de préstamos para el filtro
   const fetchLoansForFilter = useCallback(async () => {
